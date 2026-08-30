@@ -4,6 +4,7 @@ from app.generate_data import generate_batch
 from app.llm_agent import diagnose_failure
 from app.policy_engine import decide_action
 from app.schema import FailedPaymentEvent
+from app.reporting import build_batch_report, print_batch_report
 
 
 def process_event(
@@ -90,24 +91,6 @@ def run_batch(count: int = 80) -> list[dict]:
 if __name__ == "__main__":
     results = run_batch(80)
 
-    total_recovered = sum(
-        result["result"]["recovered_amount"]
-        for result in results
-    )
+    report = build_batch_report(results)
 
-    total_at_risk = sum(
-        result["event"].amount
-        for result in results
-    )
-
-    recovery_rate = (
-        total_recovered / total_at_risk * 100
-        if total_at_risk > 0
-        else 0
-    )
-
-    print("\n=== REVIVE BATCH REPORT ===")
-    print(f"Events processed: {len(results)}")
-    print(f"Total at risk: ₹{total_at_risk:,.2f}")
-    print(f"Total recovered: ₹{total_recovered:,.2f}")
-    print(f"Recovery rate: {recovery_rate:.2f}%")
+    print_batch_report(report)
