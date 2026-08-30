@@ -3,10 +3,11 @@ from app.schema import (
     DecisionReason,
     FailedPaymentEvent,
     FailureCategory,
+    PaymentType,
     PolicyDecision,
     RecoveryAction,
+    RetryCadence,
 )
-
 
 ECONOMIC_FLOOR = 100.0
 CONFIDENCE_THRESHOLD = 0.55
@@ -46,8 +47,23 @@ def decide_action(
             reason=DecisionReason.LOW_CONFIDENCE,
         )
 
-    # Safe recovery path
+  
+    # Subscription-specific retry cadence
+    if event.payment_type == PaymentType.SUBSCRIPTION:
+        if event.retry_count == 0:
+            cadence = RetryCadence.AFTER_24_HOURS
+        else:
+            cadence = RetryCadence.AFTER_72_HOURS
+
+        return PolicyDecision(
+            action=RecoveryAction.RETRY_PAYMENT,
+            reason=DecisionReason.SAFE_TO_RETRY,
+            retry_cadence=cadence,
+        )
+
+    # One-off payments can be retried immediately
     return PolicyDecision(
         action=RecoveryAction.RETRY_PAYMENT,
         reason=DecisionReason.SAFE_TO_RETRY,
+        retry_cadence=RetryCadence.IMMEDIATE,
     )

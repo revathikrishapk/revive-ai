@@ -9,6 +9,7 @@ from app.schema import (
     FailureCategory,
     PaymentType,
     RecoveryAction,
+    RetryCadence,
 )
 
 
@@ -127,3 +128,23 @@ def test_unknown_category_is_rejected():
             confidence=0.9,
             reasoning="Invalid category",
         )
+
+def test_subscription_retry_uses_delayed_cadence():
+    event = FailedPaymentEvent(
+        event_id="subscription_test_001",
+        payment_type=PaymentType.SUBSCRIPTION,
+        amount=1000.0,
+        failure_message="Subscription mandate execution failed",
+        retry_count=0,
+        subscription_id="sub_001",
+    )
+
+    diagnosis = make_diagnosis(
+        category=FailureCategory.MANDATE_FAILURE,
+        confidence=0.90,
+    )
+
+    decision = decide_action(event, diagnosis)
+
+    assert decision.action == RecoveryAction.RETRY_PAYMENT
+    assert decision.retry_cadence == RetryCadence.AFTER_24_HOURS

@@ -22,6 +22,11 @@ class RecoveryAction(str, Enum):
     ESCALATE_TO_HUMAN = "escalate_to_human"
     STOP = "stop"
 
+class RetryCadence(str, Enum):
+    IMMEDIATE = "immediate"
+    AFTER_24_HOURS = "after_24_hours"
+    AFTER_72_HOURS = "after_72_hours"
+    NONE = "none"
 
 class DecisionReason(str, Enum):
     ECONOMIC_FLOOR = "economic_floor"
@@ -52,3 +57,4 @@ class Diagnosis(BaseModel):
 class PolicyDecision(BaseModel):
     action: RecoveryAction
     reason: DecisionReason
+    retry_cadence: RetryCadence = RetryCadence.NONE
