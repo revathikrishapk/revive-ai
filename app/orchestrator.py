@@ -1,0 +1,113 @@
+from app.audit_log import log_event
+from app.executor import RecoveryExecutor
+from app.generate_data import generate_batch
+from app.llm_agent import diagnose_failure
+from app.policy_engine import decide_action
+from app.schema import FailedPaymentEvent
+
+
+def process_event(
+    event: FailedPaymentEvent,
+    executor: RecoveryExecutor,
+) -> dict:
+    """
+    Process one failed payment event through the complete
+    revenue recovery pipeline.
+    """
+
+    # 1. Audit ingestion
+    log_event(
+        event_id=event.event_id,
+        stage="INGESTED",
+        details={
+            "payment_type": event.payment_type.value,
+            "amount": event.amount,
+            "currency": event.currency,
+            "retry_count": event.retry_count,
+        },
+    )
+
+    # 2. Diagnose failure
+    diagnosis = diagnose_failure(event)
+
+    log_event(
+        event_id=event.event_id,
+        stage="DIAGNOSED",
+        details={
+            "category": diagnosis.category.value,
+            "confidence": diagnosis.confidence,
+            "reasoning": diagnosis.reasoning,
+        },
+    )
+
+    # 3. Deterministic policy decision
+    decision = decide_action(event, diagnosis)
+
+    log_event(
+        event_id=event.event_id,
+        stage="DECIDED",
+        details={
+            "action": decision.action.value,
+            "reason": decision.reason.value,
+        },
+    )
+
+    # 4. Execute only the action approved by the policy engine
+    result = executor.execute(event, decision.action)
+
+    log_event(
+        event_id=event.event_id,
+        stage="EXECUTION_RESULT",
+        details=result,
+    )
+
+    return {
+        "event_id": event.event_id,
+        "event": event,
+        "diagnosis": diagnosis,
+        "decision": decision,
+        "result": result,
+    }
+
+
+def run_batch(count: int = 80) -> list[dict]:
+    """
+    Generate and process a batch of failed payment events.
+    """
+
+    executor = RecoveryExecutor()
+    events = generate_batch(count)
+
+    results = []
+
+    for event in events:
+        result = process_event(event, executor)
+        results.append(result)
+
+    return results
+
+
+if __name__ == "__main__":
+    results = run_batch(80)
+
+    total_recovered = sum(
+        result["result"]["recovered_amount"]
+        for result in results
+    )
+
+    total_at_risk = sum(
+        result["event"].amount
+        for result in results
+    )
+
+    recovery_rate = (
+        total_recovered / total_at_risk * 100
+        if total_at_risk > 0
+        else 0
+    )
+
+    print("\n=== REVIVE BATCH REPORT ===")
+    print(f"Events processed: {len(results)}")
+    print(f"Total at risk: ₹{total_at_risk:,.2f}")
+    print(f"Total recovered: ₹{total_recovered:,.2f}")
+    print(f"Recovery rate: {recovery_rate:.2f}%")
