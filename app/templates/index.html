@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+    <title>Revive — Revenue Recovery</title>
+    <link
+        rel="stylesheet"
+        href="/static/style.css"
+    >
+</head>
+
+<body>
+    <main class="container">
+
+        <header>
+            <div>
+                <p class="eyebrow">AI REVENUE RECOVERY AGENT</p>
+                <h1>Revive</h1>
+                <p class="subtitle">
+                    Detect revenue at risk. Diagnose the cause.
+                    Recover safely.
+                </p>
+            </div>
+
+            <button id="run-button">
+                Run Recovery Batch
+            </button>
+        </header>
+
+        <section id="empty-state" class="empty-state">
+            <h2>Ready to recover revenue</h2>
+            <p>
+                Run a batch to see recovery metrics,
+                policy decisions, and audit trails.
+            </p>
+        </section>
+
+        <section id="dashboard" class="hidden">
+
+            <div class="metrics-grid">
+
+                <article class="metric-card">
+                    <span>Events Processed</span>
+                    <strong id="events-processed">0</strong>
+                </article>
+
+                <article class="metric-card">
+                    <span>Total At Risk</span>
+                    <strong id="total-at-risk">₹0</strong>
+                </article>
+
+                <article class="metric-card highlight">
+                    <span>Total Recovered</span>
+                    <strong id="total-recovered">₹0</strong>
+                </article>
+
+                <article class="metric-card">
+                    <span>Recovery Rate</span>
+                    <strong id="recovery-rate">0%</strong>
+                </article>
+
+            </div>
+
+            <section class="breakdown-section">
+                <h2>Recovery by payment type</h2>
+
+                <div class="metrics-grid">
+
+                    <article class="metric-card">
+                        <span>One-off Recovery</span>
+                        <strong id="one-off-rate">0%</strong>
+                        <small id="one-off-details"></small>
+                    </article>
+
+                    <article class="metric-card">
+                        <span>Subscription Recovery</span>
+                        <strong id="subscription-rate">0%</strong>
+                        <small id="subscription-details"></small>
+                    </article>
+
+                    <article class="metric-card">
+                        <span>Escalation Rate</span>
+                        <strong id="escalation-rate">0%</strong>
+                        <small id="escalation-details"></small>
+                    </article>
+
+                </div>
+            </section>
+
+            <section class="policy-section">
+                <h2>Policy decisions</h2>
+                <div id="policy-decisions" class="policy-list"></div>
+            </section>
+
+        </section>
+
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

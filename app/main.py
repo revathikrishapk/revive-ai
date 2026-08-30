@@ -1,7 +1,9 @@
 import json
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 from app.orchestrator import run_batch
 from app.reporting import build_batch_report
@@ -12,6 +14,22 @@ app = FastAPI(
     description="AI-powered revenue recovery with deterministic guardrails.",
     version="0.1.0",
 )
+
+app.mount(
+    "/static",
+    StaticFiles(directory="app/static"),
+    name="static",
+)
+
+templates = Jinja2Templates(directory="app/templates")
+
+
+@app.get("/")
+def dashboard(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+    )
 
 
 @app.get("/health")
