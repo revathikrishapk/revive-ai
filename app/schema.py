@@ -17,6 +17,19 @@ class FailureCategory(str, Enum):
     MANDATE_FAILURE = "mandate_failure"
     UNKNOWN = "unknown"
 
+class RecoveryAction(str, Enum):
+    RETRY_PAYMENT = "retry_payment"
+    ESCALATE_TO_HUMAN = "escalate_to_human"
+    STOP = "stop"
+
+
+class DecisionReason(str, Enum):
+    ECONOMIC_FLOOR = "economic_floor"
+    LOW_CONFIDENCE = "low_confidence"
+    RETRY_CAP_REACHED = "retry_cap_reached"
+    FRAUD_HOLD = "fraud_hold"
+    SAFE_TO_RETRY = "safe_to_retry"
+
 
 class FailedPaymentEvent(BaseModel):
     event_id: str
@@ -35,3 +48,7 @@ class Diagnosis(BaseModel):
     category: FailureCategory
     confidence: float = Field(ge=0.0, le=1.0)
     reasoning: str
+
+class PolicyDecision(BaseModel):
+    action: RecoveryAction
+    reason: DecisionReason
