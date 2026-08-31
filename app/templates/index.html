@@ -1,46 +1,59 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta
         name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-    <title>Revive — Revenue Recovery</title>
-    <link
-        rel="stylesheet"
-        href="/static/style.css"
-    >
+        content="width=device-width, initial-scale=1.0">
+    <title>Revive — AI Revenue Recovery</title>
+
+
+<link rel="stylesheet" href="/static/style.css">
+
+
 </head>
 
 <body>
-    <main class="container">
 
-        <header>
-            <div>
-                <p class="eyebrow">AI REVENUE RECOVERY AGENT</p>
-                <h1>Revive</h1>
-                <p class="subtitle">
-                    Detect revenue at risk. Diagnose the cause.
-                    Recover safely.
-                </p>
-            </div>
 
-            <button id="run-button">
-                Run Recovery Batch
-            </button>
-        </header>
+<main class="container">
 
-        <section id="empty-state" class="empty-state">
-            <h2>Ready to recover revenue</h2>
-            <p>
-                Run a batch to see recovery metrics,
-                policy decisions, and audit trails.
+    <!-- Header -->
+    <header class="header">
+        <div>
+            <p class="eyebrow">AI REVENUE RECOVERY AGENT</p>
+
+            <h1>Revive</h1>
+
+            <p class="subtitle">
+                Detect revenue at risk. Diagnose the cause.
+                Recover safely.
             </p>
-        </section>
+        </div>
 
-        <section id="dashboard" class="hidden">
+        <button id="run-button">
+            Run Recovery Batch
+        </button>
+    </header>
 
+
+    <!-- Initial state -->
+    <section id="empty-state" class="empty-state">
+        <h2>Ready to recover revenue</h2>
+
+        <p>
+            Run a batch to see recovery metrics,
+            policy decisions, and complete audit trails.
+        </p>
+    </section>
+
+
+    <!-- Main dashboard -->
+    <section id="dashboard" class="hidden">
+
+        <!-- Main metrics -->
+        <section>
             <div class="metrics-grid">
 
                 <article class="metric-card">
@@ -64,42 +77,155 @@
                 </article>
 
             </div>
+        </section>
 
-            <section class="breakdown-section">
-                <h2>Recovery by payment type</h2>
 
-                <div class="metrics-grid">
+        <!-- Payment type breakdown -->
+        <section class="dashboard-section">
 
-                    <article class="metric-card">
-                        <span>One-off Recovery</span>
-                        <strong id="one-off-rate">0%</strong>
-                        <small id="one-off-details"></small>
-                    </article>
-
-                    <article class="metric-card">
-                        <span>Subscription Recovery</span>
-                        <strong id="subscription-rate">0%</strong>
-                        <small id="subscription-details"></small>
-                    </article>
-
-                    <article class="metric-card">
-                        <span>Escalation Rate</span>
-                        <strong id="escalation-rate">0%</strong>
-                        <small id="escalation-details"></small>
-                    </article>
-
+            <div class="section-header">
+                <div>
+                    <p class="section-label">BREAKDOWN</p>
+                    <h2>Recovery by payment type</h2>
                 </div>
-            </section>
+            </div>
 
-            <section class="policy-section">
-                <h2>Policy decisions</h2>
-                <div id="policy-decisions" class="policy-list"></div>
-            </section>
+            <div class="metrics-grid three-columns">
+
+                <article class="metric-card">
+                    <span>One-off Recovery</span>
+                    <strong id="one-off-rate">0%</strong>
+                    <small id="one-off-details"></small>
+                </article>
+
+                <article class="metric-card">
+                    <span>Subscription Recovery</span>
+                    <strong id="subscription-rate">0%</strong>
+                    <small id="subscription-details"></small>
+                </article>
+
+                <article class="metric-card">
+                    <span>Escalation Rate</span>
+                    <strong id="escalation-rate">0%</strong>
+                    <small id="escalation-details"></small>
+                </article>
+
+            </div>
 
         </section>
 
-    </main>
 
-    <script src="/static/app.js"></script>
+        <!-- Policy decisions -->
+        <section class="dashboard-section">
+
+            <div class="section-header">
+                <div>
+                    <p class="section-label">GUARDRAILS</p>
+                    <h2>Policy decisions</h2>
+                </div>
+            </div>
+
+            <div
+                id="policy-decisions"
+                class="policy-list"
+            ></div>
+
+        </section>
+
+
+        <!-- Event Audit Explorer -->
+        <section class="dashboard-section events-section">
+
+            <div class="section-header">
+                <div>
+                    <p class="section-label">AUDITABILITY</p>
+                    <h2>Event Audit Explorer</h2>
+
+                    <p class="section-description">
+                        Select an event to inspect the complete
+                        recovery decision and execution trail.
+                    </p>
+                </div>
+            </div>
+
+
+            <div class="events-layout">
+
+                <!-- Event list -->
+                <div class="events-panel">
+
+                    <div class="panel-header">
+                        <span>Processed Events</span>
+                        <span
+                            id="event-count"
+                            class="panel-count"
+                        >
+                            
+                        </span>
+                    </div>
+
+                    <div
+                        id="event-list"
+                        class="event-list"
+                    ></div>
+
+                </div>
+
+
+                <!-- Audit timeline -->
+                <div class="audit-panel">
+
+                    <div
+                        id="audit-empty-state"
+                        class="audit-empty-state"
+                    >
+                        <div class="audit-empty-icon">
+                            ⟶
+                        </div>
+
+                        <h3>Select an event</h3>
+
+                        <p>
+                            Choose an event from the list to inspect
+                            its complete audit trail.
+                        </p>
+                    </div>
+
+
+                    <div
+                        id="audit-content"
+                        class="hidden"
+                    >
+
+                        <div class="audit-header">
+                            <div>
+                                <p class="section-label">
+                                    EVENT AUDIT TRAIL
+                                </p>
+
+                                <h3 id="audit-event-id"></h3>
+                            </div>
+                        </div>
+
+                        <div
+                            id="audit-timeline"
+                            class="audit-timeline"
+                        ></div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </section>
+
+</main>
+
+<script src="/static/app.js"></script>
+
+
 </body>
 </html>
