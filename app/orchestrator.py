@@ -3,8 +3,8 @@ from app.executor import RecoveryExecutor
 from app.generate_data import generate_batch
 from app.llm_agent import diagnose_failure
 from app.policy_engine import decide_action
-from app.schema import FailedPaymentEvent
 from app.reporting import build_batch_report, print_batch_report
+from app.schema import FailedPaymentEvent
 
 
 def process_event(
@@ -13,7 +13,7 @@ def process_event(
 ) -> dict:
     """
     Process one failed payment event through the complete
-    revenue recovery pipeline.
+    Revive revenue recovery pipeline.
     """
 
     # 1. Audit ingestion
@@ -28,7 +28,7 @@ def process_event(
         },
     )
 
-    # 2. Diagnose failure
+    # 2. AI diagnosis
     diagnosis = diagnose_failure(event)
 
     log_event(
@@ -50,12 +50,18 @@ def process_event(
         details={
             "action": decision.action.value,
             "reason": decision.reason.value,
+            "retry_cadence": decision.retry_cadence.value,
         },
     )
 
-    # 4. Execute only the action approved by the policy engine
-    result = executor.execute(event, decision.action)
+    # 4. Execute ONLY the action approved by the policy engine.
+    result = executor.execute(
+        event=event,
+        action=decision.action,
+        failure_category=diagnosis.category.value,
+    )
 
+    # 5. Audit execution result
     log_event(
         event_id=event.event_id,
         stage="EXECUTION_RESULT",
@@ -82,7 +88,11 @@ def run_batch(count: int = 80) -> list[dict]:
     results = []
 
     for event in events:
-        result = process_event(event, executor)
+        result = process_event(
+            event=event,
+            executor=executor,
+        )
+
         results.append(result)
 
     return results
