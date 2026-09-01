@@ -2,17 +2,12 @@
    REVIVE — FRONTEND APPLICATION
    ========================================================= */
 
-
-/* =========================================================
-   CONFIG
-   ========================================================= */
-
 const API_BASE = "";
 
 
 /* =========================================================
    DOM HELPERS
-   ========================================================= */
+========================================================= */
 
 function $(id) {
     return document.getElementById(id);
@@ -22,18 +17,15 @@ function $(id) {
 function setText(id, value) {
     const element = $(id);
 
-    if (!element) {
-        console.warn(`Element #${id} not found`);
-        return;
+    if (element) {
+        element.textContent = value;
     }
-
-    element.textContent = value;
 }
 
 
 /* =========================================================
    FORMATTING
-   ========================================================= */
+========================================================= */
 
 function formatCurrency(value) {
     const number = Number(value || 0);
@@ -103,7 +95,7 @@ function escapeHtml(value) {
 
 /* =========================================================
    TOAST
-   ========================================================= */
+========================================================= */
 
 function showToast(message) {
     const toast = $("toast");
@@ -124,531 +116,465 @@ function showToast(message) {
 
 
 /* =========================================================
-   RECOVERY OVERLAY
-   ========================================================= */
+   ENGINE MODAL
+   Uses the existing engineModal from index.html.
+========================================================= */
 
-function createRunOverlay() {
-    if ($("recoveryOverlay")) {
+const ENGINE_STAGES = [
+    {
+        key: "ingestion",
+        title: "Receiving payment events",
+        description:
+            "Ingesting the failed payment batch...",
+        progress: 12,
+    },
+
+    {
+        key: "validation",
+        title: "Validating payment events",
+        description:
+            "Checking payment contracts before processing...",
+        progress: 24,
+    },
+
+    {
+        key: "diagnosis",
+        title: "Running OpenRouter AI diagnosis",
+        description:
+            "Classifying likely payment failure causes...",
+        progress: 48,
+    },
+
+    {
+        key: "policy",
+        title: "Applying deterministic guardrails",
+        description:
+            "Checking economic floor, confidence, retry limits and fraud protection...",
+        progress: 68,
+    },
+
+    {
+        key: "execution",
+        title: "Executing eligible recovery",
+        description:
+            "Running only actions approved by deterministic policy...",
+        progress: 86,
+    },
+
+    {
+        key: "audit",
+        title: "Recording audit trail",
+        description:
+            "Persisting every recovery decision and outcome...",
+        progress: 96,
+    },
+];
+
+
+function openEngineModal() {
+    const modal = $("engineModal");
+
+    if (!modal) {
         return;
     }
 
-    const overlay = document.createElement("div");
+    resetEngineModal();
 
-    overlay.id = "recoveryOverlay";
+    modal.classList.add("is-open");
 
-    overlay.innerHTML = `
-        <div class="recovery-modal">
-
-            <div class="recovery-modal-top">
-
-                <span class="recovery-eyebrow">
-                    REVIVE ENGINE
-                </span>
-
-                <span class="recovery-live">
-                    <span></span>
-                    LIVE
-                </span>
-
-            </div>
-
-            <div class="recovery-modal-content">
-
-                <div class="recovery-orb">
-                    <div class="recovery-orb-inner">
-                        ✦
-                    </div>
-                </div>
-
-                <h2 id="recoveryTitle">
-                    Preparing recovery
-                </h2>
-
-                <p id="recoveryDescription">
-                    Initializing recovery engine...
-                </p>
-
-                <div class="recovery-progress">
-
-                    <div
-                        id="recoveryProgressBar"
-                        class="recovery-progress-bar"
-                    ></div>
-
-                </div>
-
-                <div class="recovery-steps">
-
-                    <div
-                        class="recovery-step"
-                        data-step="1"
-                    >
-                        <span class="step-icon">
-                            01
-                        </span>
-
-                        <span>
-                            Analyze payments
-                        </span>
-                    </div>
-
-                    <div
-                        class="recovery-step"
-                        data-step="2"
-                    >
-                        <span class="step-icon">
-                            02
-                        </span>
-
-                        <span>
-                            Diagnose causes
-                        </span>
-                    </div>
-
-                    <div
-                        class="recovery-step"
-                        data-step="3"
-                    >
-                        <span class="step-icon">
-                            03
-                        </span>
-
-                        <span>
-                            Apply guardrails
-                        </span>
-                    </div>
-
-                    <div
-                        class="recovery-step"
-                        data-step="4"
-                    >
-                        <span class="step-icon">
-                            04
-                        </span>
-
-                        <span>
-                            Execute recovery
-                        </span>
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-    `;
-
-    document.body.appendChild(overlay);
-
-    injectRecoveryStyles();
+    modal.setAttribute(
+        "aria-hidden",
+        "false"
+    );
 }
 
 
-/* =========================================================
-   RECOVERY OVERLAY STYLES
-   ========================================================= */
+function closeEngineModal() {
+    const modal = $("engineModal");
 
-function injectRecoveryStyles() {
-    if ($("recoveryStyles")) {
+    if (!modal) {
         return;
     }
 
-    const style = document.createElement("style");
-
-    style.id = "recoveryStyles";
-
-    style.textContent = `
-        #recoveryOverlay {
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            padding: 24px;
-
-            background: rgba(10, 12, 18, 0.62);
-
-            backdrop-filter: blur(18px);
-
-            opacity: 0;
-            visibility: hidden;
-
-            transition:
-                opacity 0.25s ease,
-                visibility 0.25s ease;
-        }
-
-        #recoveryOverlay.visible {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .recovery-modal {
-            width: min(760px, 100%);
-            max-height: 90vh;
-            overflow-y: auto;
-
-            background: #ffffff;
-
-            border: 1px solid rgba(0, 0, 0, 0.08);
-
-            border-radius: 28px;
-
-            box-shadow:
-                0 40px 100px
-                rgba(0, 0, 0, 0.28);
-        }
-
-        .recovery-modal-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-
-            padding: 22px 28px;
-
-            border-bottom: 1px solid #eeeeee;
-        }
-
-        .recovery-eyebrow {
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.14em;
-            color: #686b75;
-        }
-
-        .recovery-live {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-        }
-
-        .recovery-live span {
-            width: 7px;
-            height: 7px;
-
-            border-radius: 50%;
-
-            background: #28a745;
-
-            animation:
-                recoveryPulse
-                1.2s infinite;
-        }
-
-        .recovery-modal-content {
-            padding: 52px 42px 40px;
-            text-align: center;
-        }
-
-        .recovery-orb {
-            width: 74px;
-            height: 74px;
-
-            margin: 0 auto 26px;
-
-            display: grid;
-            place-items: center;
-
-            border-radius: 50%;
-
-            background: #f1f3f7;
-
-            animation:
-                recoveryFloat
-                2s ease-in-out infinite;
-        }
-
-        .recovery-orb-inner {
-            width: 48px;
-            height: 48px;
-
-            display: grid;
-            place-items: center;
-
-            border-radius: 50%;
-
-            background: #111318;
-
-            color: #ffffff;
-
-            font-size: 22px;
-        }
-
-        #recoveryTitle {
-            margin: 0 0 10px;
-
-            font-size: clamp(25px, 4vw, 38px);
-
-            line-height: 1.05;
-        }
-
-        #recoveryDescription {
-            margin: 0 auto 30px;
-
-            max-width: 560px;
-
-            color: #6d707a;
-
-            font-size: 15px;
-
-            line-height: 1.6;
-        }
-
-        .recovery-progress {
-            height: 8px;
-
-            overflow: hidden;
-
-            border-radius: 999px;
-
-            background: #eeeeef;
-
-            margin-bottom: 30px;
-        }
-
-        .recovery-progress-bar {
-            width: 0%;
-            height: 100%;
-
-            border-radius: inherit;
-
-            background: #315cf5;
-
-            transition:
-                width 0.45s ease;
-        }
-
-        .recovery-steps {
-            display: grid;
-
-            grid-template-columns:
-                repeat(4, 1fr);
-
-            gap: 12px;
-        }
-
-        .recovery-step {
-            display: flex;
-
-            flex-direction: column;
-
-            align-items: center;
-
-            gap: 10px;
-
-            padding: 16px 10px;
-
-            border: 1px solid #eeeeee;
-
-            border-radius: 16px;
-
-            color: #8a8d96;
-
-            font-size: 12px;
-
-            transition: all 0.25s ease;
-        }
-
-        .step-icon {
-            width: 36px;
-            height: 36px;
-
-            display: grid;
-            place-items: center;
-
-            border-radius: 10px;
-
-            background: #f2f2f3;
-
-            font-size: 10px;
-
-            font-weight: 700;
-        }
-
-        .recovery-step.active {
-            color: #111318;
-
-            border-color: #315cf5;
-
-            background: #f5f7ff;
-        }
-
-        .recovery-step.active .step-icon {
-            background: #315cf5;
-            color: #ffffff;
-        }
-
-        .recovery-step.complete {
-            color: #202329;
-
-            border-color: #dfeee3;
-
-            background: #f5faf6;
-        }
-
-        .recovery-step.complete .step-icon {
-            background: #2ca24d;
-            color: #ffffff;
-        }
-
-        @keyframes recoveryPulse {
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.3;
-            }
-        }
-
-        @keyframes recoveryFloat {
-            0%,
-            100% {
-                transform: translateY(0);
-            }
-
-            50% {
-                transform: translateY(-6px);
-            }
-        }
-
-        @media (max-width: 600px) {
-            #recoveryOverlay {
-                padding: 12px;
-            }
-
-            .recovery-modal-content {
-                padding: 42px 18px 24px;
-            }
-
-            .recovery-steps {
-                grid-template-columns:
-                    repeat(2, 1fr);
-            }
-        }
-    `;
-
-    document.head.appendChild(style);
+    modal.classList.remove("is-open");
+
+    modal.setAttribute(
+        "aria-hidden",
+        "true"
+    );
 }
 
 
-function showRecoveryOverlay() {
-    createRunOverlay();
+function resetEngineModal() {
 
-    const overlay = $("recoveryOverlay");
+    setText(
+        "engineModalTitle",
+        "Processing payments"
+    );
 
-    requestAnimationFrame(() => {
-        overlay.classList.add("visible");
-    });
-}
+    setText(
+        "engineModalSubtitle",
+        "Running the Revive recovery pipeline."
+    );
+
+    setText(
+        "engineProgressLabel",
+        "Preparing engine..."
+    );
+
+    setText(
+        "engineProgressCount",
+        "0%"
+    );
 
 
-function hideRecoveryOverlay() {
-    const overlay = $("recoveryOverlay");
-
-    if (!overlay) {
-        return;
-    }
-
-    overlay.classList.remove("visible");
-}
-
-
-function updateRecoveryStep(
-    step,
-    title,
-    description,
-    progress
-) {
-    const titleElement = $("recoveryTitle");
-    const descriptionElement = $("recoveryDescription");
-    const progressBar = $("recoveryProgressBar");
-
-    if (titleElement) {
-        titleElement.textContent = title;
-    }
-
-    if (descriptionElement) {
-        descriptionElement.textContent = description;
-    }
+    const progressBar =
+        $("engineProgressBar");
 
     if (progressBar) {
-        progressBar.style.width = `${progress}%`;
+        progressBar.style.width = "0%";
     }
 
+
+    const result =
+        $("engineResult");
+
+    if (result) {
+        result.classList.remove(
+            "visible"
+        );
+    }
+
+
+    const doneButton =
+        $("engineDoneBtn");
+
+    if (doneButton) {
+
+        doneButton.style.display =
+            "none";
+
+        doneButton.textContent =
+            "Done";
+    }
+
+
     document
-        .querySelectorAll(".recovery-step")
-        .forEach(element => {
-            const number = Number(
-                element.dataset.step
+        .querySelectorAll(
+            ".engine-stage"
+        )
+        .forEach(stage => {
+
+            stage.classList.remove(
+                "active",
+                "complete"
             );
+
+        });
+}
+
+
+function updateEngineStage(
+    stageKey,
+    progressOverride = null
+) {
+
+    const stageIndex =
+        ENGINE_STAGES.findIndex(
+            stage =>
+                stage.key === stageKey
+        );
+
+    if (stageIndex === -1) {
+        return;
+    }
+
+
+    const stage =
+        ENGINE_STAGES[stageIndex];
+
+
+    const progress =
+        progressOverride ??
+        stage.progress;
+
+
+    setText(
+        "engineModalTitle",
+        stage.title
+    );
+
+    setText(
+        "engineModalSubtitle",
+        stage.description
+    );
+
+    setText(
+        "engineProgressLabel",
+        stage.title
+    );
+
+    setText(
+        "engineProgressCount",
+        `${progress}%`
+    );
+
+
+    const progressBar =
+        $("engineProgressBar");
+
+    if (progressBar) {
+
+        progressBar.style.width =
+            `${progress}%`;
+
+    }
+
+
+    document
+        .querySelectorAll(
+            ".engine-stage"
+        )
+        .forEach(element => {
+
+            const key =
+                element.dataset.stage;
+
+            const currentIndex =
+                ENGINE_STAGES.findIndex(
+                    item =>
+                        item.key === key
+                );
+
 
             element.classList.remove(
                 "active",
                 "complete"
             );
 
-            if (number < step) {
+
+            if (
+                currentIndex <
+                stageIndex
+            ) {
+
                 element.classList.add(
                     "complete"
                 );
-            } else if (number === step) {
+
+            } else if (
+                currentIndex ===
+                stageIndex
+            ) {
+
                 element.classList.add(
                     "active"
                 );
             }
+
         });
 }
 
 
-function wait(milliseconds) {
-    return new Promise(
-        resolve =>
-            setTimeout(
-                resolve,
-                milliseconds
-            )
+function completeEngineModal(report) {
+
+    document
+        .querySelectorAll(
+            ".engine-stage"
+        )
+        .forEach(stage => {
+
+            stage.classList.remove(
+                "active"
+            );
+
+            stage.classList.add(
+                "complete"
+            );
+
+        });
+
+
+    setText(
+        "engineModalTitle",
+        "Recovery batch complete"
     );
+
+
+    setText(
+        "engineModalSubtitle",
+        `${
+            report.events_processed ||
+            report.events?.length ||
+            0
+        } payment events processed successfully.`
+    );
+
+
+    setText(
+        "engineProgressLabel",
+        "Complete"
+    );
+
+
+    setText(
+        "engineProgressCount",
+        "100%"
+    );
+
+
+    const progressBar =
+        $("engineProgressBar");
+
+    if (progressBar) {
+        progressBar.style.width =
+            "100%";
+    }
+
+
+    setText(
+        "engineRecovered",
+        formatCurrency(
+            report.total_recovered
+        )
+    );
+
+
+    setText(
+        "engineRecoveryRate",
+        formatPercent(
+            report.recovery_rate
+        )
+    );
+
+
+    setText(
+        "engineEvents",
+        report.events_processed ||
+        report.events?.length ||
+        0
+    );
+
+
+    const result =
+        $("engineResult");
+
+    if (result) {
+        result.classList.add(
+            "visible"
+        );
+    }
+
+
+    const doneButton =
+        $("engineDoneBtn");
+
+    if (doneButton) {
+
+        doneButton.style.display =
+            "inline-flex";
+
+        doneButton.textContent =
+            "Done";
+    }
+}
+
+
+function failEngineModal(error) {
+
+    document
+        .querySelectorAll(
+            ".engine-stage"
+        )
+        .forEach(stage => {
+
+            stage.classList.remove(
+                "active"
+            );
+
+        });
+
+
+    setText(
+        "engineModalTitle",
+        "Recovery batch failed"
+    );
+
+
+    setText(
+        "engineModalSubtitle",
+        error?.message ||
+        "The recovery engine could not complete the batch."
+    );
+
+
+    setText(
+        "engineProgressLabel",
+        "Failed"
+    );
+
+
+    const doneButton =
+        $("engineDoneBtn");
+
+    if (doneButton) {
+
+        doneButton.style.display =
+            "inline-flex";
+
+        doneButton.textContent =
+            "Close";
+    }
 }
 
 
 /* =========================================================
    API — RUN BATCH
-   ========================================================= */
+========================================================= */
 
 async function runRecoveryBatch() {
-    const response = await fetch(
-        `${API_BASE}/run-batch?count=10`,
-        {
-            method: "POST"
-        }
-    );
+
+    /*
+       Backend supports 1–500 events.
+       The dashboard uses 80 for a normal
+       interactive recovery run.
+    */
+
+    const response =
+        await fetch(
+            `${API_BASE}/run-batch?count=80`,
+            {
+                method: "POST",
+            }
+        );
+
 
     if (!response.ok) {
+
         let message =
             `Request failed (${response.status})`;
 
+
         try {
+
             const data =
                 await response.json();
 
             if (data.detail) {
-                message = data.detail;
+                message =
+                    data.detail;
             }
+
         } catch (_) {
             // Keep default message.
         }
 
-        throw new Error(message);
+
+        throw new Error(
+            message
+        );
     }
+
 
     return await response.json();
 }
@@ -656,30 +582,42 @@ async function runRecoveryBatch() {
 
 /* =========================================================
    API — AUDIT LOG
-   ========================================================= */
+========================================================= */
 
 async function getAuditLog(eventId) {
-    const response = await fetch(
-        `${API_BASE}/audit-log/${encodeURIComponent(eventId)}`
-    );
+
+    const response =
+        await fetch(
+            `${API_BASE}/audit-log/${encodeURIComponent(eventId)}`
+        );
+
 
     if (!response.ok) {
+
         let message =
             `Audit request failed (${response.status})`;
 
+
         try {
+
             const data =
                 await response.json();
 
             if (data.detail) {
-                message = data.detail;
+                message =
+                    data.detail;
             }
+
         } catch (_) {
             // Keep default message.
         }
 
-        throw new Error(message);
+
+        throw new Error(
+            message
+        );
     }
+
 
     return await response.json();
 }
@@ -687,18 +625,23 @@ async function getAuditLog(eventId) {
 
 /* =========================================================
    API — LATEST EXPERIMENT
-   ========================================================= */
+========================================================= */
 
 async function getLatestExperiment() {
-    const response = await fetch(
-        "/experiment/latest"
-    );
+
+    const response =
+        await fetch(
+            `${API_BASE}/experiment/latest`
+        );
+
 
     if (!response.ok) {
+
         throw new Error(
             "No experiment results available."
         );
     }
+
 
     return await response.json();
 }
@@ -706,68 +649,77 @@ async function getLatestExperiment() {
 
 /* =========================================================
    BUTTON STATE
-   ========================================================= */
+========================================================= */
 
-function setButtonsLoading(loading) {
+function setButtonsLoading(
+    loading
+) {
+
     const buttons = [
         $("runBatchBtn"),
         $("heroRunBtn"),
         $("finalRunBtn"),
-        $("navRunBtn")
+        $("navRunBtn"),
     ];
 
+
     buttons.forEach(button => {
+
         if (!button) {
             return;
         }
 
-        button.disabled = loading;
+
+        button.disabled =
+            loading;
+
 
         button.classList.toggle(
             "loading",
             loading
         );
+
     });
 }
 
 
 /* =========================================================
    IMPACT METRICS
-   ========================================================= */
+========================================================= */
 
 function updateMetrics(report) {
-    const atRisk = $("atRiskMetric");
-    const recovered = $("recoveredMetric");
-    const recoveryRate = $("recoveryRateMetric");
-    const escalationRate = $("escalationRateMetric");
 
-    if (atRisk) {
-        atRisk.textContent =
-            formatCurrency(
-                report.total_at_risk
-            );
-    }
+    setText(
+        "atRiskMetric",
+        formatCurrency(
+            report.total_at_risk
+        )
+    );
 
-    if (recovered) {
-        recovered.textContent =
-            formatCurrency(
-                report.total_recovered
-            );
-    }
 
-    if (recoveryRate) {
-        recoveryRate.textContent =
-            formatPercent(
-                report.recovery_rate
-            );
-    }
+    setText(
+        "recoveredMetric",
+        formatCurrency(
+            report.total_recovered
+        )
+    );
 
-    if (escalationRate) {
-        escalationRate.textContent =
-            formatPercent(
-                report.escalation_rate
-            );
-    }
+
+    setText(
+        "recoveryRateMetric",
+        formatPercent(
+            report.recovery_rate
+        )
+    );
+
+
+    setText(
+        "escalationRateMetric",
+        formatPercent(
+            report.escalation_rate
+        )
+    );
+
 
     setText(
         "heroRecovered",
@@ -776,12 +728,14 @@ function updateMetrics(report) {
         )
     );
 
+
     setText(
         "heroAtRisk",
         formatCompactCurrency(
             report.total_at_risk
         )
     );
+
 
     setText(
         "heroRecoveryRate",
@@ -793,92 +747,36 @@ function updateMetrics(report) {
 
 
 /* =========================================================
-   PAYMENT TYPE PERFORMANCE
-   ========================================================= */
-
-function updatePaymentTypePerformance(report) {
-    const stats =
-        report.by_payment_type || {};
-
-    const oneOff =
-        stats.one_off || {};
-
-    const subscription =
-        stats.subscription || {};
-
-    const oneOffRate =
-        Number(
-            oneOff.recovery_rate || 0
-        );
-
-    const subscriptionRate =
-        Number(
-            subscription.recovery_rate || 0
-        );
-
-    setText(
-        "oneOffEvents",
-        `${oneOff.events || 0} events`
-    );
-
-    setText(
-        "subscriptionEvents",
-        `${subscription.events || 0} events`
-    );
-
-    setText(
-        "oneOffRate",
-        formatPercent(oneOffRate)
-    );
-
-    setText(
-        "subscriptionRate",
-        formatPercent(subscriptionRate)
-    );
-
-    const oneOffBar =
-        $("oneOffBar");
-
-    const subscriptionBar =
-        $("subscriptionBar");
-
-    if (oneOffBar) {
-        oneOffBar.style.width =
-            `${Math.min(
-                oneOffRate,
-                100
-            )}%`;
-    }
-
-    if (subscriptionBar) {
-        subscriptionBar.style.width =
-            `${Math.min(
-                subscriptionRate,
-                100
-            )}%`;
-    }
-}
-
-
-/* =========================================================
    FAILURE CATEGORIES
-   ========================================================= */
+========================================================= */
 
 function updateCategoryList(report) {
+
     const container =
         $("categoryList");
+
 
     if (!container) {
         return;
     }
 
+
     const categories =
-        report.by_failure_category || {};
+        report.by_failure_category ||
+        {};
+
 
     const entries =
-        Object.entries(categories);
+        Object.entries(
+            categories
+        );
 
-    if (entries.length === 0) {
+
+    if (
+        entries.length ===
+        0
+    ) {
+
         container.innerHTML = `
             <div class="empty-state">
                 No category data available.
@@ -888,44 +786,66 @@ function updateCategoryList(report) {
         return;
     }
 
+
     entries.sort(
         ([, a], [, b]) =>
-            Number(b.events || 0)
-            -
-            Number(a.events || 0)
+            Number(
+                b.events || 0
+            ) -
+            Number(
+                a.events || 0
+            )
     );
+
 
     container.innerHTML =
         entries
             .map(
                 ([category, stats]) => `
+
                     <div class="category-row">
 
                         <div class="category-name">
+
                             ${escapeHtml(
-                                formatName(category)
+                                formatName(
+                                    category
+                                )
                             )}
+
                         </div>
+
 
                         <div class="category-events">
-                            ${stats.events || 0}
+
+                            ${Number(
+                                stats.events || 0
+                            )}
+
                         </div>
 
+
                         <div class="category-recovered">
+
                             ${formatCurrency(
                                 stats.recovered ??
                                 stats.total_recovered ??
                                 0
                             )}
+
                         </div>
 
+
                         <div class="category-rate">
+
                             ${formatPercent(
                                 stats.recovery_rate
                             )}
+
                         </div>
 
                     </div>
+
                 `
             )
             .join("");
@@ -933,10 +853,139 @@ function updateCategoryList(report) {
 
 
 /* =========================================================
+   EVENT STATUS
+========================================================= */
+/* =========================================================
+   EVENT NORMALIZATION
+   Backend returns flat event summaries.
+   Frontend uses nested objects.
+========================================================= */
+
+function normalizeEvent(rawEvent) {
+
+    if (!rawEvent) {
+        return {};
+    }
+
+    return {
+        ...rawEvent,
+
+        diagnosis:
+            rawEvent.diagnosis &&
+            typeof rawEvent.diagnosis === "object"
+                ? rawEvent.diagnosis
+                : {
+                    category:
+                        rawEvent.diagnosis ||
+                        "unknown",
+
+                    confidence:
+                        rawEvent.confidence ??
+                        0,
+
+                    reasoning:
+                        rawEvent.reasoning ||
+                        "",
+                },
+
+        decision:
+            rawEvent.decision &&
+            typeof rawEvent.decision === "object"
+                ? rawEvent.decision
+                : {
+                    action:
+                        rawEvent.decision ||
+                        "no_action",
+
+                    reason:
+                        rawEvent.decision_reason ||
+                        "unknown",
+
+                    retry_cadence:
+                        rawEvent.retry_cadence ||
+                        "none",
+                },
+
+        result:
+            rawEvent.result &&
+            typeof rawEvent.result === "object"
+                ? rawEvent.result
+                : {
+                    status:
+                        rawEvent.status ||
+                        "not_executed",
+
+                    recovery_status:
+                        rawEvent.recovery_status ||
+                        "not_attempted",
+
+                    recovered_amount:
+                        rawEvent.recovered_amount ||
+                        0,
+                },
+    };
+}
+
+
+
+
+
+function getEventStatus(event) {
+
+    const result =
+        event.result || {};
+
+
+    const decision =
+        event.decision || {};
+
+
+    if (
+        result.recovery_status ===
+        "recovered"
+    ) {
+
+        return "recovered";
+    }
+
+
+    if (
+        result.recovery_status ===
+        "failed"
+    ) {
+
+        return "failed";
+    }
+
+
+    if (
+        decision.action ===
+        "escalate_to_human"
+    ) {
+
+        return "escalated";
+    }
+
+
+    if (
+        decision.action ===
+        "stop"
+    ) {
+
+        return "stopped";
+    }
+
+
+    return "not_attempted";
+}
+
+
+/* =========================================================
    EVENT LIST
-   ========================================================= */
+========================================================= */
 
 function updateEventList(report) {
+
     const container =
         $("eventList");
 
@@ -944,23 +993,53 @@ function updateEventList(report) {
         return;
     }
 
+    /*
+       IMPORTANT:
+
+       The API returns flat event summaries.
+       Normalize them before the UI consumes them.
+    */
+
     const events =
-        report.events || [];
+        (report.events || [])
+            .map(normalizeEvent);
+
+
+    setText(
+        "activityCount",
+        events.length
+    );
+
 
     if (events.length === 0) {
+
         container.innerHTML = `
             <div class="empty-state">
-                No payment events available.
+
+                <div class="empty-icon">
+                    ◇
+                </div>
+
+                <strong>
+                    No payment events available
+                </strong>
+
+                <span>
+                    Run the engine to populate activity.
+                </span>
+
             </div>
         `;
 
         return;
     }
 
+
     container.innerHTML =
         events
             .map(
                 (event, index) => {
+
                     const result =
                         event.result || {};
 
@@ -970,156 +1049,210 @@ function updateEventList(report) {
                     const decision =
                         event.decision || {};
 
+
                     const status =
-                        result.recovery_status
-                        ||
-                        result.status
-                        ||
-                        "not_attempted";
+                        getEventStatus(
+                            event
+                        );
+
 
                     const recovered =
                         Number(
-                            result.recovered_amount || 0
+                            result.recovered_amount ||
+                            0
                         );
 
+
                     return `
+
                         <button
                             type="button"
-                            class="event-row"
+                            class="event-item event-row"
                             data-event-index="${index}"
                         >
 
-                            <div class="event-row-main">
+                            <div class="event-main">
 
-                                <div
-                                    class="event-status-dot ${escapeHtml(
-                                        status
-                                    )}"
-                                ></div>
+                                <div class="event-title-row">
 
-                                <div>
+                                    <div
+                                        class="event-status-dot ${escapeHtml(
+                                            status
+                                        )}"
+                                    ></div>
+
 
                                     <strong>
+
                                         ${escapeHtml(
                                             formatName(
-                                                diagnosis.category
-                                                ||
+                                                diagnosis.category ||
                                                 "unknown"
                                             )
                                         )}
+
                                     </strong>
 
-                                    <span>
+
+                                    <span
+                                        class="event-status ${escapeHtml(
+                                            status
+                                        )}"
+                                    >
+
                                         ${escapeHtml(
                                             formatName(
-                                                event.payment_type
-                                                ||
-                                                "payment"
+                                                status
                                             )
                                         )}
 
-                                        ·
-
-                                        ${formatCurrency(
-                                            event.amount
-                                        )}
                                     </span>
 
                                 </div>
 
+
+                                <span>
+
+                                    ${escapeHtml(
+                                        formatName(
+                                            event.payment_type ||
+                                            "payment"
+                                        )
+                                    )}
+
+                                    ·
+
+                                    ${escapeHtml(
+                                        event.event_id
+                                    )}
+
+                                </span>
+
                             </div>
 
-                            <div class="event-row-result">
+
+                            <div class="event-amount">
 
                                 <strong>
+
                                     ${
                                         recovered > 0
                                             ? formatCurrency(
                                                 recovered
                                             )
-                                            : formatName(
-                                                status
+                                            : formatCurrency(
+                                                event.amount
                                             )
                                     }
+
                                 </strong>
 
+
                                 <span>
+
                                     ${escapeHtml(
-                                        decision.action
-                                        ||
-                                        "no_action"
+                                        formatName(
+                                            decision.action ||
+                                            "no_action"
+                                        )
                                     )}
+
                                 </span>
 
                             </div>
 
                         </button>
+
                     `;
                 }
             )
             .join("");
 
+
     container
-        .querySelectorAll(".event-row")
+        .querySelectorAll(
+            ".event-row"
+        )
         .forEach(element => {
+
             element.addEventListener(
                 "click",
                 () => {
+
                     const index =
                         Number(
-                            element.dataset.eventIndex
+                            element.dataset
+                                .eventIndex
                         );
+
 
                     const event =
                         events[index];
+
 
                     selectEvent(
                         element,
                         event
                     );
+
                 }
             );
+
         });
 }
 
-
 /* =========================================================
-   SELECT EVENT
-   ========================================================= */
+   AUDIT — SELECT EVENT
+========================================================= */
 
 async function selectEvent(
     element,
     event
 ) {
+
     document
-        .querySelectorAll(".event-row")
+        .querySelectorAll(
+            ".event-row"
+        )
         .forEach(item => {
+
             item.classList.remove(
                 "selected"
             );
+
         });
+
 
     element.classList.add(
         "selected"
     );
 
-    renderAuditLoading(event);
+
+    renderAuditLoading(
+        event
+    );
+
 
     try {
+
         const audit =
             await getAuditLog(
                 event.event_id
             );
 
+
         renderAuditTrace(
             audit,
             event
         );
+
     } catch (error) {
+
         console.error(
             "Audit error:",
             error
         );
+
 
         renderAuditError(
             error.message
@@ -1129,99 +1262,134 @@ async function selectEvent(
 
 
 /* =========================================================
-   AUDIT LOADING
-   ========================================================= */
+   AUDIT — LOADING
+========================================================= */
 
-function renderAuditLoading(event) {
+function renderAuditLoading(
+    event
+) {
+
     const panel =
         $("auditPanel");
+
 
     if (!panel) {
         return;
     }
 
+
     panel.innerHTML = `
+
         <div class="audit-placeholder">
 
-            <div class="placeholder-icon">
+            <div class="audit-placeholder-icon">
                 ↻
             </div>
 
-            <span class="eyebrow">
+
+            <span>
                 EVENT INVESTIGATION
             </span>
+
 
             <h3>
                 Loading audit trail
             </h3>
 
+
             <p>
+
                 Inspecting event
+
                 ${escapeHtml(
                     event.event_id
                 )}
+
             </p>
 
         </div>
+
     `;
 }
 
 
 /* =========================================================
-   AUDIT ERROR
-   ========================================================= */
+   AUDIT — ERROR
+========================================================= */
 
-function renderAuditError(message) {
+function renderAuditError(
+    message
+) {
+
     const container =
         $("auditPanel");
+
 
     if (!container) {
         return;
     }
 
+
     container.innerHTML = `
+
         <div class="audit-placeholder">
 
-            <div class="placeholder-icon">
+            <div class="audit-placeholder-icon">
                 !
             </div>
 
-            <span class="eyebrow">
+
+            <span>
                 AUDIT ERROR
             </span>
+
 
             <h3>
                 Unable to load audit trail
             </h3>
 
+
             <p>
-                ${escapeHtml(message)}
+
+                ${escapeHtml(
+                    message
+                )}
+
             </p>
 
         </div>
+
     `;
 }
 
 
 /* =========================================================
-   AUDIT TRACE
-   ========================================================= */
+   AUDIT — TRACE
+========================================================= */
 
 function renderAuditTrace(
     audit,
     event
 ) {
+
     const container =
         $("auditPanel");
+
 
     if (!container) {
         return;
     }
 
+
     const entries =
         audit.audit_trail || [];
 
-    if (entries.length === 0) {
+
+    if (
+        entries.length ===
+        0
+    ) {
+
         container.innerHTML = `
             <div class="empty-state">
                 No audit entries available.
@@ -1231,14 +1399,23 @@ function renderAuditTrace(
         return;
     }
 
+
     const diagnosisCategory =
-        event.diagnosis?.category
-        ||
-        event.diagnosis
-        ||
-        "Unknown";
+        event.diagnosis?.category ||
+        event.diagnosis ||
+        "unknown";
+
+
+    const decision =
+        event.decision || {};
+
+
+    const result =
+        event.result || {};
+
 
     container.innerHTML = `
+
         <div class="trace-summary">
 
             <div class="trace-summary-item">
@@ -1248,14 +1425,17 @@ function renderAuditTrace(
                 </span>
 
                 <strong>
+
                     ${escapeHtml(
                         formatName(
                             diagnosisCategory
                         )
                     )}
+
                 </strong>
 
             </div>
+
 
             <div class="trace-summary-item">
 
@@ -1264,30 +1444,44 @@ function renderAuditTrace(
                 </span>
 
                 <strong>
+
                     ${formatCurrency(
                         event.amount
                     )}
+
                 </strong>
 
             </div>
+
 
             <div class="trace-summary-item">
 
                 <span>
-                    Retry count
+                    Decision
                 </span>
 
                 <strong>
-                    ${event.retry_count ?? 0}
+
+                    ${escapeHtml(
+                        formatName(
+                            decision.action ||
+                            "unknown"
+                        )
+                    )}
+
                 </strong>
 
             </div>
 
         </div>
 
+
         <div class="trace-title">
+
             Recovery decision trail
+
         </div>
+
 
         <div class="trace-timeline">
 
@@ -1295,31 +1489,38 @@ function renderAuditTrace(
                 entries
                     .map(
                         (entry, index) => {
+
                             const stage =
                                 identifyStage(
                                     entry,
                                     index
                                 );
 
+
                             const detail =
                                 getEntryDetail(
                                     entry
                                 );
+
 
                             const metadata =
                                 getEntryMetadata(
                                     entry
                                 );
 
+
                             let metadataHtml =
                                 "";
+
 
                             if (
                                 metadata &&
                                 typeof metadata ===
                                     "object"
                             ) {
+
                                 metadataHtml = `
+
                                     <details
                                         class="trace-data"
                                     >
@@ -1327,6 +1528,7 @@ function renderAuditTrace(
                                         <summary>
                                             View event data
                                         </summary>
+
 
                                         <pre>${escapeHtml(
                                             JSON.stringify(
@@ -1337,71 +1539,77 @@ function renderAuditTrace(
                                         )}</pre>
 
                                     </details>
+
                                 `;
                             }
 
+
                             const eventName =
-                                entry.action
-                                ||
-                                entry.event
-                                ||
-                                entry.stage
-                                ||
+                                entry.action ||
+                                entry.event ||
+                                entry.stage ||
                                 stage;
 
-                            return `
-                                <div
-                                    class="trace-event"
-                                >
 
-                                    <div
-                                        class="trace-marker"
-                                    >
+                            return `
+
+                                <div class="trace-event">
+
+                                    <div class="trace-marker">
 
                                         <span>
+
                                             ${String(
                                                 index + 1
                                             ).padStart(
                                                 2,
                                                 "0"
                                             )}
+
                                         </span>
 
                                     </div>
 
-                                    <div
-                                        class="trace-content"
-                                    >
 
-                                        <span
-                                            class="trace-stage"
-                                        >
+                                    <div class="trace-content">
+
+                                        <span class="trace-stage">
+
                                             ${escapeHtml(
                                                 formatName(
                                                     stage
                                                 )
                                             )}
+
                                         </span>
 
+
                                         <strong>
+
                                             ${escapeHtml(
                                                 formatName(
                                                     eventName
                                                 )
                                             )}
+
                                         </strong>
 
+
                                         <p>
+
                                             ${escapeHtml(
                                                 detail
                                             )}
+
                                         </p>
+
 
                                         ${metadataHtml}
 
                                     </div>
 
                                 </div>
+
                             `;
                         }
                     )
@@ -1409,21 +1617,47 @@ function renderAuditTrace(
             }
 
         </div>
+
+
+        <div class="trace-final-result">
+
+            <span>
+                FINAL OUTCOME
+            </span>
+
+
+            <strong>
+
+                ${escapeHtml(
+                    formatName(
+                        result.recovery_status ||
+                        result.status ||
+                        decision.action ||
+                        "not_attempted"
+                    )
+                )}
+
+            </strong>
+
+        </div>
+
     `;
 }
 
 
 /* =========================================================
    AUDIT HELPERS
-   ========================================================= */
+========================================================= */
 
 function identifyStage(
     entry,
     index
 ) {
+
     if (entry.stage) {
         return entry.stage;
     }
+
 
     const stages = [
         "RECEIVED",
@@ -1435,68 +1669,97 @@ function identifyStage(
         "EXECUTING",
         "ESCALATED",
         "STOPPED",
-        "COMPLETED"
+        "COMPLETED",
     ];
 
-    return stages[index] || "EVENT";
+
+    return (
+        stages[index] ||
+        "EVENT"
+    );
 }
 
 
-function getEntryDetail(entry) {
+function getEntryDetail(
+    entry
+) {
+
     const details =
         entry.details;
 
+
     if (!details) {
+
         return (
-            entry.reasoning
-            ||
-            entry.message
-            ||
+            entry.reasoning ||
+            entry.message ||
             "Stage recorded in audit trail."
         );
     }
 
-    if (typeof details === "string") {
+
+    if (
+        typeof details ===
+        "string"
+    ) {
+
         return details;
     }
 
-    if (details.reasoning) {
+
+    if (
+        details.reasoning
+    ) {
+
         return details.reasoning;
     }
 
-    if (details.reason) {
-        return `Decision reason: ${
-            formatName(
-                details.reason
-            )
-        }`;
+
+    if (
+        details.reason
+    ) {
+
+        return `Decision reason: ${formatName(
+            details.reason
+        )}`;
     }
 
-    if (details.action) {
-        return `Action: ${
-            formatName(
-                details.action
-            )
-        }`;
+
+    if (
+        details.action
+    ) {
+
+        return `Action: ${formatName(
+            details.action
+        )}`;
     }
 
-    if (details.execution_result) {
+
+    if (
+        details.execution_result
+    ) {
+
         return "Execution result recorded.";
     }
+
 
     return "Stage recorded in audit trail.";
 }
 
 
-function getEntryMetadata(entry) {
+function getEntryMetadata(
+    entry
+) {
+
     if (
-        !entry.details
-        ||
+        !entry.details ||
         typeof entry.details !==
             "object"
     ) {
+
         return null;
     }
+
 
     return entry.details;
 }
@@ -1504,18 +1767,21 @@ function getEntryMetadata(entry) {
 
 /* =========================================================
    DASHBOARD UPDATE
-   ========================================================= */
+========================================================= */
 
-function updateDashboard(report) {
-    updateMetrics(report);
+function updateDashboard(
+    report
+) {
 
-    updatePaymentTypePerformance(
+    updateMetrics(
         report
     );
+
 
     updateCategoryList(
         report
     );
+
 
     updateEventList(
         report
@@ -1525,273 +1791,287 @@ function updateDashboard(report) {
 
 /* =========================================================
    EXPERIMENT COMPARISON
-   ========================================================= */
+========================================================= */
 
 async function loadExperimentComparison() {
+
     try {
+
         const experiment =
             await getLatestExperiment();
+
 
         const baseline =
             experiment.baseline || {};
 
+
         const revive =
             experiment.revive || {};
+
 
         const comparison =
             experiment.comparison || {};
 
-        /* ---------------------------------------------
-           BASELINE
-        --------------------------------------------- */
 
-        const baselineRecovered =
-            $("baselineRecovered");
+        setText(
+            "baselineRecovered",
+            formatCurrency(
+                baseline.total_recovered
+            )
+        );
 
-        if (baselineRecovered) {
-            baselineRecovered.textContent =
-                formatCurrency(
-                    baseline.total_recovered
-                );
-        }
 
-        const baselineRate =
-            $("baselineRecoveryRate");
+        setText(
+            "baselineRecoveryRate",
+            formatPercent(
+                baseline.recovery_rate
+            )
+        );
 
-        if (baselineRate) {
-            baselineRate.textContent =
-                formatPercent(
-                    baseline.recovery_rate
-                );
-        }
 
-        const baselineUnsafe =
-            $("baselineUnsafeRetries");
+        setText(
+            "baselineUnsafeRetries",
+            baseline.unsafe_retry_count ??
+            baseline.unsafe_retries ??
+            comparison.baseline_unsafe_retries ??
+            0
+        );
 
-        if (baselineUnsafe) {
-            baselineUnsafe.textContent =
-                baseline.unsafe_retry_count
-                ??
-                baseline.unsafe_retries
-                ??
-                0;
-        }
 
-        /* ---------------------------------------------
-           REVIVE
-        --------------------------------------------- */
+        setText(
+            "reviveRecovered",
+            formatCurrency(
+                revive.total_recovered
+            )
+        );
 
-        const reviveRecovered =
-            $("reviveRecovered");
 
-        if (reviveRecovered) {
-            reviveRecovered.textContent =
-                formatCurrency(
-                    revive.total_recovered
-                );
-        }
+        setText(
+            "reviveRecoveryRate",
+            formatPercent(
+                revive.recovery_rate
+            )
+        );
 
-        const reviveRate =
-            $("reviveRecoveryRate");
 
-        if (reviveRate) {
-            reviveRate.textContent =
-                formatPercent(
-                    revive.recovery_rate
-                );
-        }
+        setText(
+            "reviveUnsafeRetries",
+            comparison.revive_unsafe_retries ??
+            revive.unsafe_retry_count ??
+            revive.unsafe_retries ??
+            0
+        );
 
-        const reviveUnsafe =
-            $("reviveUnsafeRetries");
 
-        if (reviveUnsafe) {
-            reviveUnsafe.textContent =
-                comparison.revive_unsafe_retries
-                ??
-                0;
-        }
+        const unsafe =
+            comparison.baseline_unsafe_retries ??
+            baseline.unsafe_retry_count ??
+            baseline.unsafe_retries ??
+            0;
 
-        /* ---------------------------------------------
-           INSIGHT
-        --------------------------------------------- */
 
-        const insight =
-            $("comparisonInsight");
+        setText(
+            "comparisonInsight",
+            `Revive prevented ${unsafe} unsafe retry actions while maintaining controlled recovery.`
+        );
 
-        if (insight) {
-            const unsafe =
-                comparison.baseline_unsafe_retries
-                ??
-                baseline.unsafe_retry_count
-                ??
-                0;
-
-            insight.textContent =
-                `Revive prevented ${unsafe} unsafe retry actions while maintaining controlled recovery.`;
-        }
 
     } catch (error) {
+
         console.warn(
             "Experiment comparison unavailable:",
             error
         );
+
     }
 }
 
 
 /* =========================================================
    MAIN RECOVERY FLOW
-   ========================================================= */
+========================================================= */
 
 async function handleRunBatch() {
-    if (window.reviveBatchRunning) {
+
+    if (
+        window.reviveBatchRunning
+    ) {
+
         return;
     }
 
-    window.reviveBatchRunning = true;
 
-    setButtonsLoading(true);
+    window.reviveBatchRunning =
+        true;
 
-    /*
-       Start overlay immediately.
-    */
 
-    showRecoveryOverlay();
+    setButtonsLoading(
+        true
+    );
+
+
+    openEngineModal();
+
 
     try {
-        /* ---------------------------------------------
-           STEP 1
-        --------------------------------------------- */
-
-        updateRecoveryStep(
-            1,
-            "Analyzing failed payments",
-            "Finding revenue at risk across the payment batch...",
-            18
-        );
 
         /*
-           Start real backend request.
+           Start the REAL backend request
+           immediately.
+
+           The modal updates while the
+           backend is processing.
         */
 
         const batchPromise =
             runRecoveryBatch();
 
-        await wait(550);
 
         /* ---------------------------------------------
-           STEP 2
+           INGESTION
         --------------------------------------------- */
 
-        updateRecoveryStep(
-            2,
-            "Diagnosing failure causes",
-            "Classifying payment failures and estimating confidence...",
-            38
+        updateEngineStage(
+            "ingestion"
         );
 
-        await wait(650);
+
+        await wait(
+            450
+        );
+
 
         /* ---------------------------------------------
-           STEP 3
+           VALIDATION
         --------------------------------------------- */
 
-        updateRecoveryStep(
-            3,
-            "Applying deterministic guardrails",
-            "Checking economics, confidence, retry limits and fraud protection...",
-            62
+        updateEngineStage(
+            "validation"
         );
 
-        await wait(650);
+
+        await wait(
+            550
+        );
+
 
         /* ---------------------------------------------
-           STEP 4
+           OPENROUTER AI
         --------------------------------------------- */
 
-        updateRecoveryStep(
-            4,
-            "Executing eligible recovery",
-            "Running approved recovery actions and recording outcomes...",
-            88
+        updateEngineStage(
+            "diagnosis"
         );
+
+
+        await wait(
+            650
+        );
+
+
+        /* ---------------------------------------------
+           DETERMINISTIC POLICY
+        --------------------------------------------- */
+
+        updateEngineStage(
+            "policy"
+        );
+
+
+        await wait(
+            650
+        );
+
+
+        /* ---------------------------------------------
+           EXECUTION
+        --------------------------------------------- */
+
+        updateEngineStage(
+            "execution"
+        );
+
 
         /*
-           Wait for actual backend result.
+           IMPORTANT:
+
+           Do not declare success until
+           the REAL backend response arrives.
         */
 
         const report =
             await batchPromise;
 
-        await wait(400);
+
+        /* ---------------------------------------------
+           AUDIT
+        --------------------------------------------- */
+
+        updateEngineStage(
+            "audit"
+        );
+
+
+        await wait(
+            400
+        );
+
 
         /* ---------------------------------------------
            COMPLETE
         --------------------------------------------- */
 
-        updateRecoveryStep(
-            4,
-            "Recovery complete",
-            `${report.events_processed || report.events?.length || 0} payment events processed.`,
-            100
+        completeEngineModal(
+            report
         );
 
-        await wait(900);
-
-        hideRecoveryOverlay();
 
         /*
-           Update dashboard.
+           Update live dashboard.
         */
 
         updateDashboard(
             report
         );
 
+
         /*
-           Reload experiment comparison.
+           Reload frozen experiment benchmark.
         */
 
         await loadExperimentComparison();
+
 
         showToast(
             "Recovery batch completed."
         );
 
-        /*
-           Scroll to metrics.
-        */
-
-        const metrics =
-            document.querySelector(
-                ".metrics-section"
-            );
-
-        if (metrics) {
-            setTimeout(() => {
-                metrics.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start"
-                });
-            }, 200);
-        }
 
     } catch (error) {
+
         console.error(
             "Recovery batch error:",
             error
         );
 
-        hideRecoveryOverlay();
+
+        failEngineModal(
+            error
+        );
+
 
         showToast(
-            error.message
-            ||
+            error.message ||
             "Recovery batch failed."
         );
 
+
     } finally {
-        setButtonsLoading(false);
+
+        setButtonsLoading(
+            false
+        );
+
 
         window.reviveBatchRunning =
             false;
@@ -1801,15 +2081,20 @@ async function handleRunBatch() {
 
 /* =========================================================
    NAVIGATION
-   ========================================================= */
+========================================================= */
 
 function initializeNavigation() {
+
     document
-        .querySelectorAll(".nav-link")
+        .querySelectorAll(
+            ".nav-link"
+        )
         .forEach(link => {
+
             link.addEventListener(
                 "click",
                 () => {
+
                     document
                         .querySelectorAll(
                             ".nav-link"
@@ -1821,62 +2106,172 @@ function initializeNavigation() {
                                 )
                         );
 
+
                     link.classList.add(
                         "active"
                     );
+
                 }
             );
+
         });
 }
 
 
 /* =========================================================
+   MODAL CONTROLS
+========================================================= */
+
+function initializeEngineModal() {
+
+    const closeButton =
+        $("engineCloseBtn");
+
+
+    const doneButton =
+        $("engineDoneBtn");
+
+
+    const backdrop =
+        document.querySelector(
+            ".engine-modal-backdrop"
+        );
+
+
+    if (closeButton) {
+
+        closeButton.addEventListener(
+            "click",
+            () => {
+
+                /*
+                   Do not allow closing while
+                   the real batch is executing.
+                */
+
+                if (
+                    !window.reviveBatchRunning
+                ) {
+
+                    closeEngineModal();
+
+                }
+
+            }
+        );
+
+    }
+
+
+    if (doneButton) {
+
+        doneButton.addEventListener(
+            "click",
+            () => {
+
+                closeEngineModal();
+
+                doneButton.textContent =
+                    "Done";
+
+            }
+        );
+
+    }
+
+
+    if (backdrop) {
+
+        backdrop.addEventListener(
+            "click",
+            () => {
+
+                if (
+                    !window.reviveBatchRunning
+                ) {
+
+                    closeEngineModal();
+
+                }
+
+            }
+        );
+
+    }
+}
+
+
+/* =========================================================
+   UTILITY
+========================================================= */
+
+function wait(
+    milliseconds
+) {
+
+    return new Promise(
+        resolve =>
+            setTimeout(
+                resolve,
+                milliseconds
+            )
+    );
+}
+
+
+/* =========================================================
    INITIALIZATION
-   ========================================================= */
+========================================================= */
 
 function initialize() {
+
     console.log(
         "REVIVE frontend initialized."
     );
 
-    const navRunBtn =
-        $("navRunBtn");
 
-    if (navRunBtn) {
-        navRunBtn.addEventListener(
-            "click",
-            handleRunBatch
-        );
-    }
-
-    const buttons = [
+    const runButtons = [
         $("runBatchBtn"),
         $("heroRunBtn"),
-        $("finalRunBtn")
+        $("finalRunBtn"),
+        $("navRunBtn"),
     ];
 
-    buttons.forEach(button => {
-        if (!button) {
-            return;
+
+    runButtons.forEach(
+        button => {
+
+            if (!button) {
+                return;
+            }
+
+
+            button.addEventListener(
+                "click",
+                handleRunBatch
+            );
+
         }
+    );
 
-        button.addEventListener(
-            "click",
-            handleRunBatch
-        );
-    });
 
-    createRunOverlay();
-
-    loadExperimentComparison();
+    initializeEngineModal();
 
     initializeNavigation();
+
+
+    /*
+       Load the frozen Experiment 019
+       benchmark immediately.
+    */
+
+    loadExperimentComparison();
 }
 
 
 /* =========================================================
    START
-   ========================================================= */
+========================================================= */
 
 document.addEventListener(
     "DOMContentLoaded",
