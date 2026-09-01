@@ -1,216 +1,609 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Revive — AI Revenue Recovery</title>
 
+    <meta
+        name="description"
+        content="Revive intelligently recovers failed payment revenue with AI diagnosis and deterministic safety guardrails."
+    >
 
-<link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
 
+    <link
+        rel="stylesheet"
+        href="/static/style.css"
+    >
 </head>
 
 <body>
 
+    <!-- =====================================================
+         NAVIGATION
+    ====================================================== -->
 
-<main class="container">
+    <header class="navbar">
 
-    <!-- Header -->
-    <header class="header">
-        <div>
-            <p class="eyebrow">AI REVENUE RECOVERY AGENT</p>
+        <div class="nav-inner">
 
-            <h1>Revive</h1>
+            <a href="/" class="brand">
+                <span class="brand-mark">R</span>
+                <span class="brand-name">revive</span>
+            </a>
 
-            <p class="subtitle">
-                Detect revenue at risk. Diagnose the cause.
-                Recover safely.
-            </p>
+            <nav class="nav-links">
+
+                <a href="#engine">
+                    Engine
+                </a>
+
+                <a href="#performance">
+                    Performance
+                </a>
+
+                <a href="#safety">
+                    Safety
+                </a>
+
+                <a href="#activity">
+                    Activity
+                </a>
+
+            </nav>
+
+            <button
+                id="runBatchBtn"
+                class="nav-action"
+            >
+                Run recovery
+                <span>↗</span>
+            </button>
+
         </div>
 
-        <button id="run-button">
-            Run Recovery Batch
-        </button>
     </header>
 
 
-    <!-- Initial state -->
-    <section id="empty-state" class="empty-state">
-        <h2>Ready to recover revenue</h2>
+    <main>
 
-        <p>
-            Run a batch to see recovery metrics,
-            policy decisions, and complete audit trails.
-        </p>
-    </section>
+        <!-- =================================================
+             HERO
+        ================================================== -->
+
+        <section class="hero">
+
+            <div class="hero-content">
+
+                <div class="eyebrow">
+                    AI REVENUE RECOVERY
+                </div>
+
+                <h1>
+                    Revenue recovery,
+                    <span>without the guesswork.</span>
+                </h1>
+
+                <p class="hero-description">
+                    Revive diagnoses failed payments with AI,
+                    applies deterministic recovery policies,
+                    and safely recovers eligible revenue.
+                </p>
+
+                <div class="hero-actions">
+
+                    <button
+                        id="heroRunBtn"
+                        class="primary-button"
+                    >
+                        Run recovery batch
+                        <span>→</span>
+                    </button>
+
+                    <a
+                        href="#engine"
+                        class="secondary-button"
+                    >
+                        Explore the engine
+                    </a>
+
+                </div>
+
+            </div>
 
 
-    <!-- Main dashboard -->
-    <section id="dashboard" class="hidden">
+            <!-- HERO SYSTEM VISUAL -->
 
-        <!-- Main metrics -->
-        <section>
+            <div class="hero-system">
+
+                <div class="system-label">
+                    REVIVE ENGINE
+                </div>
+
+                <div class="system-flow">
+
+                    <div class="flow-node">
+
+                        <div class="flow-icon">
+                            $
+                        </div>
+
+                        <div>
+                            <strong>
+                                Failed payment
+                            </strong>
+
+                            <span>
+                                Revenue at risk
+                            </span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="flow-line"></div>
+
+
+                    <div class="flow-node active">
+
+                        <div class="flow-icon">
+                            ✦
+                        </div>
+
+                        <div>
+                            <strong>
+                                AI diagnosis
+                            </strong>
+
+                            <span>
+                                Root cause + confidence
+                            </span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="flow-line"></div>
+
+
+                    <div class="flow-node">
+
+                        <div class="flow-icon">
+                            ✓
+                        </div>
+
+                        <div>
+                            <strong>
+                                Policy engine
+                            </strong>
+
+                            <span>
+                                Deterministic guardrails
+                            </span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="flow-line"></div>
+
+
+                    <div class="flow-node">
+
+                        <div class="flow-icon">
+                            →
+                        </div>
+
+                        <div>
+                            <strong>
+                                Recovery action
+                            </strong>
+
+                            <span>
+                                Execute or escalate
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             LIVE METRICS
+        ================================================== -->
+
+        <section class="metrics-section">
+
+            <div class="section-header">
+
+                <div>
+                    <div class="eyebrow">
+                        LIVE RECOVERY
+                    </div>
+
+                    <h2>
+                        Revenue, recovered.
+                    </h2>
+                </div>
+
+                <div class="status-indicator">
+
+                    <span class="status-dot"></span>
+
+                    Simulation active
+
+                </div>
+
+            </div>
+
+
             <div class="metrics-grid">
 
-                <article class="metric-card">
-                    <span>Events Processed</span>
-                    <strong id="events-processed">0</strong>
+                <article class="metric-card large">
+
+                    <span class="metric-label">
+                        Revenue at risk
+                    </span>
+
+                    <strong
+                        id="atRiskMetric"
+                        class="metric-value"
+                    >
+                        ₹0
+                    </strong>
+
+                    <span class="metric-caption">
+                        Failed payments identified
+                    </span>
+
                 </article>
 
-                <article class="metric-card">
-                    <span>Total At Risk</span>
-                    <strong id="total-at-risk">₹0</strong>
+
+                <article class="metric-card large highlight">
+
+                    <span class="metric-label">
+                        Revenue recovered
+                    </span>
+
+                    <strong
+                        id="recoveredMetric"
+                        class="metric-value"
+                    >
+                        ₹0
+                    </strong>
+
+                    <span class="metric-caption">
+                        Successfully recovered
+                    </span>
+
                 </article>
 
-                <article class="metric-card highlight">
-                    <span>Total Recovered</span>
-                    <strong id="total-recovered">₹0</strong>
-                </article>
 
                 <article class="metric-card">
-                    <span>Recovery Rate</span>
-                    <strong id="recovery-rate">0%</strong>
+
+                    <span class="metric-label">
+                        Recovery rate
+                    </span>
+
+                    <strong
+                        id="recoveryRateMetric"
+                        class="metric-value"
+                    >
+                        0%
+                    </strong>
+
+                    <span class="metric-caption">
+                        Revenue recovered / at risk
+                    </span>
+
+                </article>
+
+
+                <article class="metric-card">
+
+                    <span class="metric-label">
+                        Escalation rate
+                    </span>
+
+                    <strong
+                        id="escalationRateMetric"
+                        class="metric-value"
+                    >
+                        0%
+                    </strong>
+
+                    <span class="metric-caption">
+                        Sent for human review
+                    </span>
+
                 </article>
 
             </div>
+
         </section>
 
 
-        <!-- Payment type breakdown -->
-        <section class="dashboard-section">
+        <!-- =================================================
+             ENGINE
+        ================================================== -->
+
+        <section
+            id="engine"
+            class="engine-section"
+        >
 
             <div class="section-header">
+
                 <div>
-                    <p class="section-label">BREAKDOWN</p>
-                    <h2>Recovery by payment type</h2>
+
+                    <div class="eyebrow">
+                        HOW REVIVE WORKS
+                    </div>
+
+                    <h2>
+                        AI diagnoses.
+                        <br>
+                        Guardrails decide.
+                    </h2>
+
                 </div>
-            </div>
 
-            <div class="metrics-grid three-columns">
-
-                <article class="metric-card">
-                    <span>One-off Recovery</span>
-                    <strong id="one-off-rate">0%</strong>
-                    <small id="one-off-details"></small>
-                </article>
-
-                <article class="metric-card">
-                    <span>Subscription Recovery</span>
-                    <strong id="subscription-rate">0%</strong>
-                    <small id="subscription-details"></small>
-                </article>
-
-                <article class="metric-card">
-                    <span>Escalation Rate</span>
-                    <strong id="escalation-rate">0%</strong>
-                    <small id="escalation-details"></small>
-                </article>
+                <p class="section-description">
+                    The model never gets direct access to
+                    payment execution. Every recovery action
+                    passes through deterministic policies.
+                </p>
 
             </div>
 
-        </section>
 
+            <div class="engine-grid">
 
-        <!-- Policy decisions -->
-        <section class="dashboard-section">
+                <article class="engine-card">
 
-            <div class="section-header">
-                <div>
-                    <p class="section-label">GUARDRAILS</p>
-                    <h2>Policy decisions</h2>
-                </div>
-            </div>
+                    <div class="engine-number">
+                        01
+                    </div>
 
-            <div
-                id="policy-decisions"
-                class="policy-list"
-            ></div>
+                    <div class="engine-card-icon">
+                        ✦
+                    </div>
 
-        </section>
+                    <h3>
+                        Diagnose
+                    </h3>
 
-
-        <!-- Event Audit Explorer -->
-        <section class="dashboard-section events-section">
-
-            <div class="section-header">
-                <div>
-                    <p class="section-label">AUDITABILITY</p>
-                    <h2>Event Audit Explorer</h2>
-
-                    <p class="section-description">
-                        Select an event to inspect the complete
-                        recovery decision and execution trail.
+                    <p>
+                        AI identifies the likely root cause
+                        of a failed payment and returns a
+                        confidence score.
                     </p>
+
+                    <div class="engine-example">
+
+                        <span>
+                            Example
+                        </span>
+
+                        <strong>
+                            network_error
+                        </strong>
+
+                        <small>
+                            confidence 0.92
+                        </small>
+
+                    </div>
+
+                </article>
+
+
+                <article class="engine-card">
+
+                    <div class="engine-number">
+                        02
+                    </div>
+
+                    <div class="engine-card-icon">
+                        ✓
+                    </div>
+
+                    <h3>
+                        Decide
+                    </h3>
+
+                    <p>
+                        A deterministic policy engine checks
+                        economic, confidence, retry, fraud,
+                        and subscription rules.
+                    </p>
+
+                    <div class="engine-example">
+
+                        <span>
+                            Guardrails
+                        </span>
+
+                        <strong>
+                            retry allowed
+                        </strong>
+
+                        <small>
+                            within policy
+                        </small>
+
+                    </div>
+
+                </article>
+
+
+                <article class="engine-card">
+
+                    <div class="engine-number">
+                        03
+                    </div>
+
+                    <div class="engine-card-icon">
+                        →
+                    </div>
+
+                    <h3>
+                        Recover
+                    </h3>
+
+                    <p>
+                        Revive executes the approved action,
+                        records the result, and measures the
+                        recovered revenue.
+                    </p>
+
+                    <div class="engine-example">
+
+                        <span>
+                            Result
+                        </span>
+
+                        <strong>
+                            recovered
+                        </strong>
+
+                        <small>
+                            audit recorded
+                        </small>
+
+                    </div>
+
+                </article>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             PERFORMANCE
+        ================================================== -->
+
+        <section
+            id="performance"
+            class="performance-section"
+        >
+
+            <div class="section-header">
+
+                <div>
+
+                    <div class="eyebrow">
+                        RECOVERY INTELLIGENCE
+                    </div>
+
+                    <h2>
+                        See where recovery happens.
+                    </h2>
+
                 </div>
+
             </div>
 
 
-            <div class="events-layout">
+            <div class="performance-layout">
 
-                <!-- Event list -->
-                <div class="events-panel">
+                <div class="performance-card">
 
-                    <div class="panel-header">
-                        <span>Processed Events</span>
-                        <span
-                            id="event-count"
-                            class="panel-count"
-                        >
-                            
-                        </span>
+                    <div class="performance-title">
+                        By payment type
                     </div>
 
-                    <div
-                        id="event-list"
-                        class="event-list"
-                    ></div>
+
+                    <div class="performance-row">
+
+                        <div class="performance-label">
+
+                            <span>
+                                One-off
+                            </span>
+
+                            <small id="oneOffEvents">
+                                0 events
+                            </small>
+
+                        </div>
+
+                        <div class="performance-bar">
+
+                            <div
+                                id="oneOffBar"
+                                class="performance-fill"
+                            ></div>
+
+                        </div>
+
+                        <strong id="oneOffRate">
+                            0%
+                        </strong>
+
+                    </div>
+
+
+                    <div class="performance-row">
+
+                        <div class="performance-label">
+
+                            <span>
+                                Subscription
+                            </span>
+
+                            <small id="subscriptionEvents">
+                                0 events
+                            </small>
+
+                        </div>
+
+                        <div class="performance-bar">
+
+                            <div
+                                id="subscriptionBar"
+                                class="performance-fill"
+                            ></div>
+
+                        </div>
+
+                        <strong id="subscriptionRate">
+                            0%
+                        </strong>
+
+                    </div>
 
                 </div>
 
 
-                <!-- Audit timeline -->
-                <div class="audit-panel">
+                <div class="category-card">
 
-                    <div
-                        id="audit-empty-state"
-                        class="audit-empty-state"
-                    >
-                        <div class="audit-empty-icon">
-                            ⟶
-                        </div>
-
-                        <h3>Select an event</h3>
-
-                        <p>
-                            Choose an event from the list to inspect
-                            its complete audit trail.
-                        </p>
+                    <div class="performance-title">
+                        Failure categories
                     </div>
 
-
                     <div
-                        id="audit-content"
-                        class="hidden"
+                        id="categoryList"
+                        class="category-list"
                     >
 
-                        <div class="audit-header">
-                            <div>
-                                <p class="section-label">
-                                    EVENT AUDIT TRAIL
-                                </p>
-
-                                <h3 id="audit-event-id"></h3>
-                            </div>
+                        <div class="empty-state">
+                            Run a batch to see recovery data.
                         </div>
-
-                        <div
-                            id="audit-timeline"
-                            class="audit-timeline"
-                        ></div>
 
                     </div>
 
@@ -220,12 +613,280 @@
 
         </section>
 
-    </section>
 
-</main>
+        <!-- =================================================
+             SAFETY
+        ================================================== -->
 
-<script src="/static/app.js"></script>
+        <section
+            id="safety"
+            class="safety-section"
+        >
 
+            <div class="safety-copy">
+
+                <div class="eyebrow">
+                    SAFETY BY DESIGN
+                </div>
+
+                <h2>
+                    Automation with
+                    <span>boundaries.</span>
+                </h2>
+
+                <p>
+                    Revive is designed so that AI can reason
+                    about failures without receiving authority
+                    over financial actions.
+                </p>
+
+            </div>
+
+
+            <div class="guardrails">
+
+                <div class="guardrail">
+
+                    <span class="guardrail-icon">
+                        ₹
+                    </span>
+
+                    <div>
+
+                        <strong>
+                            Economic floor
+                        </strong>
+
+                        <span>
+                            Small-value failures don't trigger
+                            unnecessary recovery attempts.
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="guardrail">
+
+                    <span class="guardrail-icon">
+                        ◌
+                    </span>
+
+                    <div>
+
+                        <strong>
+                            Confidence threshold
+                        </strong>
+
+                        <span>
+                            Low-confidence diagnoses are
+                            escalated instead of guessed.
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="guardrail">
+
+                    <span class="guardrail-icon">
+                        3
+                    </span>
+
+                    <div>
+
+                        <strong>
+                            Retry cap
+                        </strong>
+
+                        <span>
+                            Recovery attempts cannot continue
+                            indefinitely.
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="guardrail">
+
+                    <span class="guardrail-icon">
+                        !
+                    </span>
+
+                    <div>
+
+                        <strong>
+                            Fraud protection
+                        </strong>
+
+                        <span>
+                            Fraud and security holds never
+                            receive automatic retries.
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="guardrail">
+
+                    <span class="guardrail-icon">
+                        ↺
+                    </span>
+
+                    <div>
+
+                        <strong>
+                            Idempotency
+                        </strong>
+
+                        <span>
+                            Duplicate payment events cannot
+                            execute recovery twice.
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             ACTIVITY
+        ================================================== -->
+
+        <section
+            id="activity"
+            class="activity-section"
+        >
+
+            <div class="section-header">
+
+                <div>
+
+                    <div class="eyebrow">
+                        RECENT ACTIVITY
+                    </div>
+
+                    <h2>
+                        Follow every recovery.
+                    </h2>
+
+                </div>
+
+                <span class="activity-count">
+                    <span id="activityCount">
+                        0
+                    </span>
+                    events
+                </span>
+
+            </div>
+
+
+            <div class="activity-layout">
+
+                <div
+                    id="eventList"
+                    class="event-list"
+                >
+
+                    <div class="empty-state">
+                        Run a recovery batch to populate activity.
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="auditPanel"
+                    class="audit-panel"
+                >
+
+                    <div class="audit-empty">
+
+                        <div class="audit-empty-icon">
+                            ↗
+                        </div>
+
+                        <strong>
+                            Select an event
+                        </strong>
+
+                        <span>
+                            View its complete recovery trace.
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             FINAL CTA
+        ================================================== -->
+
+        <section class="final-section">
+
+            <div class="final-content">
+
+                <div class="eyebrow">
+                    REVIVE
+                </div>
+
+                <h2>
+                    Recover more.
+                    <br>
+                    Risk less.
+                </h2>
+
+                <p>
+                    Intelligent recovery for failed payments,
+                    with deterministic guardrails at every step.
+                </p>
+
+                <button
+                    id="finalRunBtn"
+                    class="primary-button"
+                >
+                    Run recovery batch
+                    <span>→</span>
+                </button>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =====================================================
+         TOAST
+    ====================================================== -->
+
+    <div
+        id="toast"
+        class="toast"
+    >
+        <span id="toastMessage">
+            Recovery batch completed.
+        </span>
+    </div>
+
+
+    <script src="/static/app.js?v=2"></script>
 
 </body>
 </html>
