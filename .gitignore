@@ -5,3 +5,4 @@
 .pytest_cache/
 data/*.jsonl
 !data/.gitkeep
+.experiment_results

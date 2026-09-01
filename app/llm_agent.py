@@ -1,17 +1,25 @@
+import json
 import os
 
-from google import genai
-from google.genai import types
+from dotenv import load_dotenv
+from openai import OpenAI
 from pydantic import ValidationError
 
-from app.schema import Diagnosis, FailedPaymentEvent, FailureCategory
+from app.schema import (
+    Diagnosis,
+    FailedPaymentEvent,
+    FailureCategory,
+)
 
-from dotenv import load_dotenv
 
 load_dotenv()
 
 
-MODEL_NAME = "gemini-2.5-flash-lite"
+MODEL_NAME = os.getenv(
+    "DEEPSEEK_MODEL",
+    "deepseek-v4-flash",
+)
+
 MAX_DIAGNOSIS_ATTEMPTS = 3
 
 
@@ -19,36 +27,61 @@ class DiagnosisAgent:
     """
     AI diagnosis layer.
 
-    IMPORTANT:
-    This class can only diagnose a payment failure.
-    It has no access to the policy engine or executor.
+    The agent only diagnoses payment failures.
+
+    It has NO authority to:
+    - retry payments
+    - stop recovery
+    - escalate payments
+    - execute payments
+    - move money
+
+    The deterministic policy engine handles those decisions.
     """
 
     def __init__(self):
-        api_key = os.getenv("GEMINI_API_KEY")
 
-        self.client = (
-            genai.Client(api_key=api_key)
-            if api_key
-            else None
-        )
+        self.api_key = os.getenv("DEEPSEEK_API_KEY")
+
+        self.client = None
+
+        if self.api_key:
+            self.client = OpenAI(
+                api_key=self.api_key,
+                base_url="https://api.deepseek.com",
+            )
 
     def diagnose(
         self,
         event: FailedPaymentEvent,
     ) -> Diagnosis:
 
+        # -------------------------------------------------
+        # DEVELOPMENT MODE
+        # -------------------------------------------------
+        #
+        # If no API key is configured, use deterministic
+        # mock diagnosis.
+        #
+        # This lets us build and test the complete system
+        # without depending on an external API.
+        # -------------------------------------------------
+
         if self.client is None:
             return self._mock_diagnosis(event)
 
         last_error = None
 
+        # -------------------------------------------------
+        # REAL AI MODE
+        # -------------------------------------------------
+
         for attempt in range(MAX_DIAGNOSIS_ATTEMPTS):
 
             try:
-                diagnosis = self._call_gemini(event)
 
-                # Explicit application-level validation.
+                diagnosis = self._call_deepseek(event)
+
                 return Diagnosis.model_validate(
                     diagnosis.model_dump()
                 )
@@ -57,58 +90,81 @@ class DiagnosisAgent:
                 ValidationError,
                 ValueError,
                 TypeError,
+                json.JSONDecodeError,
             ) as error:
 
                 last_error = error
 
-        # Safe fallback:
-        # malformed/invalid AI output never reaches
-        # the policy engine as a confident diagnosis.
+        # -------------------------------------------------
+        # SAFE FALLBACK
+        # -------------------------------------------------
+        #
+        # Never guess if the AI repeatedly produces
+        # invalid output.
+        #
+        # UNKNOWN + confidence 0.0 will cause the policy
+        # engine to escalate the event.
+        # -------------------------------------------------
+
         return Diagnosis(
             category=FailureCategory.UNKNOWN,
             confidence=0.0,
             reasoning=(
                 "AI diagnosis failed validation after "
                 f"{MAX_DIAGNOSIS_ATTEMPTS} attempts. "
-                f"Fallback applied. Error: {last_error}"
+                "Safe fallback applied."
             ),
         )
 
-    def _call_gemini(
+    def _call_deepseek(
         self,
         event: FailedPaymentEvent,
     ) -> Diagnosis:
 
-        prompt = f"""
-You are a payment failure diagnosis system.
+        system_prompt = """
+You are the diagnosis component of a payment recovery system.
 
-Your ONLY responsibility is to classify the likely
-root cause of a failed payment.
+Your ONLY responsibility is to classify the likely root cause
+of a failed payment.
 
-You MUST NOT recommend:
-- retrying the payment
-- stopping recovery
-- escalating to a human
-- executing any payment action
+You MUST NOT:
 
-Those decisions belong to a separate deterministic
-policy engine.
+- recommend retrying the payment
+- recommend stopping recovery
+- recommend human escalation
+- execute any payment action
+- make policy decisions
 
-Classify the failure into exactly one category:
+A separate deterministic policy engine handles all recovery
+decisions.
 
-- network_error
-- insufficient_funds
-- expired_card
-- fraud_hold
-- mandate_failure
-- unknown
+Return ONLY valid JSON.
 
-Return:
-1. category
-2. confidence between 0.0 and 1.0
-3. concise reasoning based only on the event
+The JSON must contain exactly:
 
-Payment event:
+{
+    "category": "network_error",
+    "confidence": 0.92,
+    "reasoning": "Short explanation based on the event."
+}
+
+The category MUST be exactly one of:
+
+network_error
+insufficient_funds
+expired_card
+fraud_hold
+mandate_failure
+unknown
+
+Confidence MUST be between 0.0 and 1.0.
+
+Keep reasoning concise and base it only on the supplied
+payment event.
+"""
+
+        user_prompt = f"""
+Diagnose this payment failure.
 
 Payment type: {event.payment_type.value}
 Amount: {event.amount}
@@ -116,26 +172,39 @@ Currency: {event.currency}
 Failure message: {event.failure_message}
 Retry count: {event.retry_count}
 Subscription ID: {event.subscription_id}
+
+Return JSON only.
 """
 
-        response = self.client.models.generate_content(
+        response = self.client.chat.completions.create(
             model=MODEL_NAME,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=Diagnosis,
-                temperature=0,
-            ),
+            messages=[
+                {
+                    "role": "system",
+                    "content": system_prompt,
+                },
+                {
+                    "role": "user",
+                    "content": user_prompt,
+                },
+            ],
+            response_format={
+                "type": "json_object",
+            },
+            temperature=0,
+            max_tokens=200,
         )
 
-        if not response.text:
+        content = response.choices[0].message.content
+
+        if not content:
             raise ValueError(
-                "Gemini returned an empty response"
+                "DeepSeek returned an empty response."
             )
 
-        return Diagnosis.model_validate_json(
-            response.text
-        )
+        parsed = json.loads(content)
+
+        return Diagnosis.model_validate(parsed)
 
     @staticmethod
     def _mock_diagnosis(
@@ -221,9 +290,9 @@ Subscription ID: {event.subscription_id}
         )
 
 
-# Keep the existing function interface so the rest
-# of the pipeline does not need to know whether we're
-# using Gemini or mock mode.
+# ---------------------------------------------------------
+# Shared diagnosis agent
+# ---------------------------------------------------------
 
 _agent = DiagnosisAgent()
 
@@ -231,4 +300,5 @@ _agent = DiagnosisAgent()
 def diagnose_failure(
     event: FailedPaymentEvent,
 ) -> Diagnosis:
+
     return _agent.diagnose(event)
