@@ -1,892 +1,1494 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Revive — AI Revenue Recovery</title>
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Revive — Revenue Recovery Intelligence
+    </title>
 
     <meta
         name="description"
-        content="Revive intelligently recovers failed payment revenue with AI diagnosis and deterministic safety guardrails."
+        content="AI-powered revenue recovery with deterministic safety guardrails."
     >
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     <link
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap"
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
         rel="stylesheet"
     >
 
     <link
         rel="stylesheet"
-        href="/static/style.css"
+        href="/static/style.css?v=10"
     >
+
 </head>
+
 
 <body>
 
-    <!-- =====================================================
-         NAVIGATION
-    ====================================================== -->
+<div class="page-glow glow-one"></div>
+<div class="page-glow glow-two"></div>
 
-    <header class="navbar">
 
-        <div class="nav-inner">
+<!-- =====================================================
+     NAV
+===================================================== -->
 
-            <a href="/" class="brand">
-                <span class="brand-mark">R</span>
-                <span class="brand-name">revive</span>
+<header class="navbar">
+
+    <div class="nav-inner">
+
+        <a
+            href="#engine"
+            class="brand"
+        >
+
+            <span class="brand-mark">
+                R
+            </span>
+
+            <span class="brand-name">
+                revive
+            </span>
+
+        </a>
+
+
+        <nav class="nav-center">
+
+            <a
+                href="#engine"
+                class="nav-link active"
+            >
+                Engine
             </a>
 
-            <nav class="nav-links">
+            <a
+                href="#impact"
+                class="nav-link"
+            >
+                Impact
+            </a>
 
-                <a href="#engine">
-                    Engine
-                </a>
+            <a
+                href="#comparison"
+                class="nav-link"
+            >
+                Experiment
+            </a>
 
-                <a href="#performance">
-                    Performance
-                </a>
+            <a
+                href="#activity"
+                class="nav-link"
+            >
+                Activity
+            </a>
 
-                <a href="#safety">
-                    Safety
-                </a>
+        </nav>
 
-                <a href="#activity">
-                    Activity
-                </a>
 
-            </nav>
+        <div class="nav-right">
+
+            <span class="system-status">
+
+                <span class="status-dot"></span>
+
+                SYSTEM OPERATIONAL
+
+            </span>
+
 
             <button
-                id="runBatchBtn"
-                class="nav-action"
+                id="navRunBtn"
+                class="nav-run"
+                type="button"
             >
-                Run recovery
+                Run engine
                 <span>↗</span>
             </button>
 
         </div>
 
-    </header>
+    </div>
+
+</header>
 
 
-    <main>
 
-        <!-- =================================================
-             HERO
-        ================================================== -->
+<main>
 
-        <section class="hero">
 
-            <div class="hero-content">
+<!-- =====================================================
+     HERO
+===================================================== -->
 
-                <div class="eyebrow">
-                    AI REVENUE RECOVERY
+<section
+    class="hero"
+    id="engine"
+>
+
+    <div class="hero-copy">
+
+        <div class="eyebrow-row">
+
+            <span class="eyebrow-dot"></span>
+
+            <span class="eyebrow">
+                AI REVENUE RECOVERY
+            </span>
+
+            <span class="eyebrow-chip">
+                LIVE ENGINE
+            </span>
+
+        </div>
+
+
+        <h1>
+
+            Recover revenue.
+
+            <span>
+                Intelligently.
+            </span>
+
+        </h1>
+
+
+        <p class="hero-description">
+
+            Revive diagnoses failed payments,
+            applies deterministic recovery guardrails,
+            and executes only when the economics
+            and safety conditions make sense.
+
+        </p>
+
+
+        <div class="hero-actions">
+
+            <button
+                id="heroRunBtn"
+                class="primary-button"
+                type="button"
+            >
+
+                <span>
+                    Run recovery
+                </span>
+
+                <span>
+                    →
+                </span>
+
+            </button>
+
+
+            <a
+                href="#impact"
+                class="secondary-button"
+            >
+
+                See the impact
+
+                <span>
+                    ↓
+                </span>
+
+            </a>
+
+        </div>
+
+
+        <div class="hero-proof">
+
+            <div>
+                <strong>
+                    AI
+                </strong>
+
+                <span>
+                    diagnosis
+                </span>
+            </div>
+
+            <i></i>
+
+            <div>
+                <strong>
+                    RULES
+                </strong>
+
+                <span>
+                    deterministic policy
+                </span>
+            </div>
+
+            <i></i>
+
+            <div>
+                <strong>
+                    SAFE
+                </strong>
+
+                <span>
+                    idempotent execution
+                </span>
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =================================================
+         HERO PRODUCT VISUAL
+    ================================================= -->
+
+    <div class="hero-product">
+
+        <div class="product-window">
+
+            <div class="window-top">
+
+                <div class="window-brand">
+
+                    <span class="mini-mark">
+                        R
+                    </span>
+
+                    <span>
+                        Revive Control
+                    </span>
+
                 </div>
 
-                <h1>
-                    Revenue recovery,
-                    <span>without the guesswork.</span>
-                </h1>
 
-                <p class="hero-description">
-                    Revive diagnoses failed payments with AI,
-                    applies deterministic recovery policies,
-                    and safely recovers eligible revenue.
-                </p>
+                <div class="window-controls">
 
-                <div class="hero-actions">
-
-                    <button
-                        id="heroRunBtn"
-                        class="primary-button"
-                    >
-                        Run recovery batch
-                        <span>→</span>
-                    </button>
-
-                    <a
-                        href="#engine"
-                        class="secondary-button"
-                    >
-                        Explore the engine
-                    </a>
+                    <span></span>
+                    <span></span>
+                    <span></span>
 
                 </div>
 
             </div>
 
 
-            <!-- HERO SYSTEM VISUAL -->
+            <div class="window-content">
 
-            <div class="hero-system">
 
-                <div class="system-label">
-                    REVIVE ENGINE
-                </div>
+                <div class="product-heading">
 
-                <div class="system-flow">
-
-                    <div class="flow-node">
-
-                        <div class="flow-icon">
-                            $
-                        </div>
-
-                        <div>
-                            <strong>
-                                Failed payment
-                            </strong>
-
-                            <span>
-                                Revenue at risk
-                            </span>
-                        </div>
-
-                    </div>
-
-
-                    <div class="flow-line"></div>
-
-
-                    <div class="flow-node active">
-
-                        <div class="flow-icon">
-                            ✦
-                        </div>
-
-                        <div>
-                            <strong>
-                                AI diagnosis
-                            </strong>
-
-                            <span>
-                                Root cause + confidence
-                            </span>
-                        </div>
-
-                    </div>
-
-
-                    <div class="flow-line"></div>
-
-
-                    <div class="flow-node">
-
-                        <div class="flow-icon">
-                            ✓
-                        </div>
-
-                        <div>
-                            <strong>
-                                Policy engine
-                            </strong>
-
-                            <span>
-                                Deterministic guardrails
-                            </span>
-                        </div>
-
-                    </div>
-
-
-                    <div class="flow-line"></div>
-
-
-                    <div class="flow-node">
-
-                        <div class="flow-icon">
-                            →
-                        </div>
-
-                        <div>
-                            <strong>
-                                Recovery action
-                            </strong>
-
-                            <span>
-                                Execute or escalate
-                            </span>
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- =================================================
-             LIVE METRICS
-        ================================================== -->
-
-        <section class="metrics-section">
-
-            <div class="section-header">
-
-                <div>
-                    <div class="eyebrow">
-                        LIVE RECOVERY
-                    </div>
-
-                    <h2>
-                        Revenue, recovered.
-                    </h2>
-                </div>
-
-                <div class="status-indicator">
-
-                    <span class="status-dot"></span>
-
-                    Simulation active
-
-                </div>
-
-            </div>
-
-
-            <div class="metrics-grid">
-
-                <article class="metric-card large">
-
-                    <span class="metric-label">
-                        Revenue at risk
-                    </span>
-
-                    <strong
-                        id="atRiskMetric"
-                        class="metric-value"
-                    >
-                        ₹0
-                    </strong>
-
-                    <span class="metric-caption">
-                        Failed payments identified
-                    </span>
-
-                </article>
-
-
-                <article class="metric-card large highlight">
-
-                    <span class="metric-label">
-                        Revenue recovered
-                    </span>
-
-                    <strong
-                        id="recoveredMetric"
-                        class="metric-value"
-                    >
-                        ₹0
-                    </strong>
-
-                    <span class="metric-caption">
-                        Successfully recovered
-                    </span>
-
-                </article>
-
-
-                <article class="metric-card">
-
-                    <span class="metric-label">
-                        Recovery rate
-                    </span>
-
-                    <strong
-                        id="recoveryRateMetric"
-                        class="metric-value"
-                    >
-                        0%
-                    </strong>
-
-                    <span class="metric-caption">
-                        Revenue recovered / at risk
-                    </span>
-
-                </article>
-
-
-                <article class="metric-card">
-
-                    <span class="metric-label">
-                        Escalation rate
-                    </span>
-
-                    <strong
-                        id="escalationRateMetric"
-                        class="metric-value"
-                    >
-                        0%
-                    </strong>
-
-                    <span class="metric-caption">
-                        Sent for human review
-                    </span>
-
-                </article>
-
-            </div>
-
-        </section>
-
-
-        <!-- =================================================
-             ENGINE
-        ================================================== -->
-
-        <section
-            id="engine"
-            class="engine-section"
-        >
-
-            <div class="section-header">
-
-                <div>
-
-                    <div class="eyebrow">
-                        HOW REVIVE WORKS
-                    </div>
-
-                    <h2>
-                        AI diagnoses.
-                        <br>
-                        Guardrails decide.
-                    </h2>
-
-                </div>
-
-                <p class="section-description">
-                    The model never gets direct access to
-                    payment execution. Every recovery action
-                    passes through deterministic policies.
-                </p>
-
-            </div>
-
-
-            <div class="engine-grid">
-
-                <article class="engine-card">
-
-                    <div class="engine-number">
-                        01
-                    </div>
-
-                    <div class="engine-card-icon">
-                        ✦
-                    </div>
-
-                    <h3>
-                        Diagnose
-                    </h3>
-
-                    <p>
-                        AI identifies the likely root cause
-                        of a failed payment and returns a
-                        confidence score.
-                    </p>
-
-                    <div class="engine-example">
+                    <div>
 
                         <span>
-                            Example
+                            RECOVERY CONTROL
                         </span>
 
-                        <strong>
-                            network_error
+                        <h2>
+                            Revenue intelligence
+                        </h2>
+
+                    </div>
+
+
+                    <div class="live-badge">
+
+                        <span></span>
+
+                        LIVE
+
+                    </div>
+
+                </div>
+
+
+                <!-- PRODUCT METRICS -->
+
+                <div class="product-metrics">
+
+                    <div class="product-metric primary">
+
+                        <span>
+                            RECOVERED
+                        </span>
+
+                        <strong id="heroRecovered">
+                            ₹625K
                         </strong>
 
                         <small>
-                            confidence 0.92
+                            simulation
                         </small>
 
                     </div>
 
-                </article>
 
+                    <div class="product-metric">
 
-                <article class="engine-card">
+                        <span>
+                            AT RISK
+                        </span>
 
-                    <div class="engine-number">
-                        02
+                        <strong id="heroAtRisk">
+                            ₹1.90M
+                        </strong>
+
+                        <small>
+                            payment value
+                        </small>
+
                     </div>
 
-                    <div class="engine-card-icon">
+
+                    <div class="product-metric">
+
+                        <span>
+                            RECOVERY
+                        </span>
+
+                        <strong id="heroRecoveryRate">
+                            32.89%
+                        </strong>
+
+                        <small>
+                            controlled
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- CONNECTION PIPELINE -->
+
+                <div class="product-pipeline">
+
+                    <div class="pipeline-label">
+                        DECISION PIPELINE
+                    </div>
+
+
+                    <div class="pipeline-track">
+
+
+                        <div class="pipeline-node">
+
+                            <div class="pipeline-icon">
+                                01
+                            </div>
+
+                            <strong>
+                                Payment
+                            </strong>
+
+                            <span>
+                                Failure detected
+                            </span>
+
+                        </div>
+
+
+                        <div class="pipeline-connector">
+                            <span></span>
+                        </div>
+
+
+                        <div class="pipeline-node active">
+
+                            <div class="pipeline-icon">
+                                02
+                            </div>
+
+                            <strong>
+                                AI
+                            </strong>
+
+                            <span>
+                                Cause classified
+                            </span>
+
+                        </div>
+
+
+                        <div class="pipeline-connector">
+                            <span></span>
+                        </div>
+
+
+                        <div class="pipeline-node">
+
+                            <div class="pipeline-icon">
+                                03
+                            </div>
+
+                            <strong>
+                                Policy
+                            </strong>
+
+                            <span>
+                                Safety checked
+                            </span>
+
+                        </div>
+
+
+                        <div class="pipeline-connector">
+                            <span></span>
+                        </div>
+
+
+                        <div class="pipeline-node success">
+
+                            <div class="pipeline-icon">
+                                04
+                            </div>
+
+                            <strong>
+                                Recover
+                            </strong>
+
+                            <span>
+                                Approved action
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- MINI EVENT -->
+
+                <div class="product-event">
+
+                    <div class="event-symbol">
                         ✓
                     </div>
 
-                    <h3>
-                        Decide
-                    </h3>
-
-                    <p>
-                        A deterministic policy engine checks
-                        economic, confidence, retry, fraud,
-                        and subscription rules.
-                    </p>
-
-                    <div class="engine-example">
-
-                        <span>
-                            Guardrails
-                        </span>
-
-                        <strong>
-                            retry allowed
-                        </strong>
-
-                        <small>
-                            within policy
-                        </small>
-
-                    </div>
-
-                </article>
-
-
-                <article class="engine-card">
-
-                    <div class="engine-number">
-                        03
-                    </div>
-
-                    <div class="engine-card-icon">
-                        →
-                    </div>
-
-                    <h3>
-                        Recover
-                    </h3>
-
-                    <p>
-                        Revive executes the approved action,
-                        records the result, and measures the
-                        recovered revenue.
-                    </p>
-
-                    <div class="engine-example">
-
-                        <span>
-                            Result
-                        </span>
-
-                        <strong>
-                            recovered
-                        </strong>
-
-                        <small>
-                            audit recorded
-                        </small>
-
-                    </div>
-
-                </article>
-
-            </div>
-
-        </section>
-
-
-        <!-- =================================================
-             PERFORMANCE
-        ================================================== -->
-
-        <section
-            id="performance"
-            class="performance-section"
-        >
-
-            <div class="section-header">
-
-                <div>
-
-                    <div class="eyebrow">
-                        RECOVERY INTELLIGENCE
-                    </div>
-
-                    <h2>
-                        See where recovery happens.
-                    </h2>
-
-                </div>
-
-            </div>
-
-
-            <div class="performance-layout">
-
-                <div class="performance-card">
-
-                    <div class="performance-title">
-                        By payment type
-                    </div>
-
-
-                    <div class="performance-row">
-
-                        <div class="performance-label">
-
-                            <span>
-                                One-off
-                            </span>
-
-                            <small id="oneOffEvents">
-                                0 events
-                            </small>
-
-                        </div>
-
-                        <div class="performance-bar">
-
-                            <div
-                                id="oneOffBar"
-                                class="performance-fill"
-                            ></div>
-
-                        </div>
-
-                        <strong id="oneOffRate">
-                            0%
-                        </strong>
-
-                    </div>
-
-
-                    <div class="performance-row">
-
-                        <div class="performance-label">
-
-                            <span>
-                                Subscription
-                            </span>
-
-                            <small id="subscriptionEvents">
-                                0 events
-                            </small>
-
-                        </div>
-
-                        <div class="performance-bar">
-
-                            <div
-                                id="subscriptionBar"
-                                class="performance-fill"
-                            ></div>
-
-                        </div>
-
-                        <strong id="subscriptionRate">
-                            0%
-                        </strong>
-
-                    </div>
-
-                </div>
-
-
-                <div class="category-card">
-
-                    <div class="performance-title">
-                        Failure categories
-                    </div>
-
-                    <div
-                        id="categoryList"
-                        class="category-list"
-                    >
-
-                        <div class="empty-state">
-                            Run a batch to see recovery data.
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- =================================================
-             SAFETY
-        ================================================== -->
-
-        <section
-            id="safety"
-            class="safety-section"
-        >
-
-            <div class="safety-copy">
-
-                <div class="eyebrow">
-                    SAFETY BY DESIGN
-                </div>
-
-                <h2>
-                    Automation with
-                    <span>boundaries.</span>
-                </h2>
-
-                <p>
-                    Revive is designed so that AI can reason
-                    about failures without receiving authority
-                    over financial actions.
-                </p>
-
-            </div>
-
-
-            <div class="guardrails">
-
-                <div class="guardrail">
-
-                    <span class="guardrail-icon">
-                        ₹
-                    </span>
 
                     <div>
 
-                        <strong>
-                            Economic floor
-                        </strong>
-
                         <span>
-                            Small-value failures don't trigger
-                            unnecessary recovery attempts.
+                            LATEST DECISION
                         </span>
 
+                        <strong>
+                            Network failure → safe retry
+                        </strong>
+
+                    </div>
+
+
+                    <div class="event-result">
+                        +₹2,450
                     </div>
 
                 </div>
 
-
-                <div class="guardrail">
-
-                    <span class="guardrail-icon">
-                        ◌
-                    </span>
-
-                    <div>
-
-                        <strong>
-                            Confidence threshold
-                        </strong>
-
-                        <span>
-                            Low-confidence diagnoses are
-                            escalated instead of guessed.
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <div class="guardrail">
-
-                    <span class="guardrail-icon">
-                        3
-                    </span>
-
-                    <div>
-
-                        <strong>
-                            Retry cap
-                        </strong>
-
-                        <span>
-                            Recovery attempts cannot continue
-                            indefinitely.
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <div class="guardrail">
-
-                    <span class="guardrail-icon">
-                        !
-                    </span>
-
-                    <div>
-
-                        <strong>
-                            Fraud protection
-                        </strong>
-
-                        <span>
-                            Fraud and security holds never
-                            receive automatic retries.
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <div class="guardrail">
-
-                    <span class="guardrail-icon">
-                        ↺
-                    </span>
-
-                    <div>
-
-                        <strong>
-                            Idempotency
-                        </strong>
-
-                        <span>
-                            Duplicate payment events cannot
-                            execute recovery twice.
-                        </span>
-
-                    </div>
-
-                </div>
 
             </div>
 
-        </section>
+        </div>
 
 
-        <!-- =================================================
-             ACTIVITY
-        ================================================== -->
+        <!-- FLOATING CARD -->
 
-        <section
-            id="activity"
-            class="activity-section"
-        >
+        <div class="floating-card floating-top">
 
-            <div class="section-header">
+            <span>
+                SAFETY SCORE
+            </span>
 
-                <div>
+            <strong>
+                98.4
+            </strong>
 
-                    <div class="eyebrow">
-                        RECENT ACTIVITY
-                    </div>
+            <small>
+                policy compliant
+            </small>
 
-                    <h2>
-                        Follow every recovery.
-                    </h2>
+        </div>
 
-                </div>
 
-                <span class="activity-count">
-                    <span id="activityCount">
-                        0
-                    </span>
-                    events
+        <div class="floating-card floating-bottom">
+
+            <span>
+                UNSAFE RETRIES
+            </span>
+
+            <strong>
+                0
+            </strong>
+
+            <small>
+                blocked automatically
+            </small>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     TRUST BAR
+===================================================== -->
+
+<section class="trust-bar">
+
+    <span>
+        BUILT FOR PAYMENT OPERATIONS
+    </span>
+
+    <div>
+
+        <span>
+            DIAGNOSIS
+        </span>
+
+        <i>·</i>
+
+        <span>
+            POLICY
+        </span>
+
+        <i>·</i>
+
+        <span>
+            EXECUTION
+        </span>
+
+        <i>·</i>
+
+        <span>
+            AUDIT
+        </span>
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     IMPACT
+===================================================== -->
+
+<section
+    class="section"
+    id="impact"
+>
+
+    <div class="section-heading">
+
+        <div>
+
+            <div class="eyebrow">
+                MEASURABLE IMPACT
+            </div>
+
+            <h2>
+                Revenue is the
+                <span>
+                    north star.
+                </span>
+            </h2>
+
+        </div>
+
+
+        <p>
+
+            Every decision is measured against
+            recoverable revenue, not simply the
+            number of retries performed.
+
+        </p>
+
+    </div>
+
+
+
+    <div class="metric-grid">
+
+
+        <article class="metric-card featured">
+
+            <div class="metric-top">
+
+                <span>
+                    REVENUE RECOVERED
+                </span>
+
+                <span class="metric-live">
+                    ● SIMULATION
                 </span>
 
             </div>
 
 
-            <div class="activity-layout">
-
-                <div
-                    id="eventList"
-                    class="event-list"
-                >
-
-                    <div class="empty-state">
-                        Run a recovery batch to populate activity.
-                    </div>
-
-                </div>
+            <strong
+                id="recoveredMetric"
+                class="metric-value"
+            >
+                ₹0
+            </strong>
 
 
-                <div
-                    id="auditPanel"
-                    class="audit-panel"
-                >
+            <div class="metric-footer">
 
-                    <div class="audit-empty">
+                <span>
+                    successfully recovered
+                </span>
 
-                        <div class="audit-empty-icon">
-                            ↗
-                        </div>
-
-                        <strong>
-                            Select an event
-                        </strong>
-
-                        <span>
-                            View its complete recovery trace.
-                        </span>
-
-                    </div>
-
-                </div>
+                <span class="metric-arrow">
+                    ↗
+                </span>
 
             </div>
 
-        </section>
+        </article>
 
 
-        <!-- =================================================
-             FINAL CTA
-        ================================================== -->
+        <article class="metric-card">
 
-        <section class="final-section">
+            <div class="metric-top">
 
-            <div class="final-content">
-
-                <div class="eyebrow">
-                    REVIVE
-                </div>
-
-                <h2>
-                    Recover more.
-                    <br>
-                    Risk less.
-                </h2>
-
-                <p>
-                    Intelligent recovery for failed payments,
-                    with deterministic guardrails at every step.
-                </p>
-
-                <button
-                    id="finalRunBtn"
-                    class="primary-button"
-                >
-                    Run recovery batch
-                    <span>→</span>
-                </button>
+                <span>
+                    REVENUE AT RISK
+                </span>
 
             </div>
 
-        </section>
 
-    </main>
+            <strong
+                id="atRiskMetric"
+                class="metric-value"
+            >
+                ₹0
+            </strong>
 
 
-    <!-- =====================================================
-         TOAST
-    ====================================================== -->
+            <div class="metric-footer">
 
-    <div
-        id="toast"
-        class="toast"
-    >
-        <span id="toastMessage">
-            Recovery batch completed.
-        </span>
+                <span>
+                    failed payment value
+                </span>
+
+            </div>
+
+        </article>
+
+
+        <article class="metric-card">
+
+            <div class="metric-top">
+
+                <span>
+                    RECOVERY RATE
+                </span>
+
+            </div>
+
+
+            <strong
+                id="recoveryRateMetric"
+                class="metric-value"
+            >
+                0.00%
+            </strong>
+
+
+            <div class="metric-footer">
+
+                <span>
+                    revenue recovered
+                </span>
+
+            </div>
+
+        </article>
+
+
+        <article class="metric-card">
+
+            <div class="metric-top">
+
+                <span>
+                    ESCALATION RATE
+                </span>
+
+            </div>
+
+
+            <strong
+                id="escalationRateMetric"
+                class="metric-value"
+            >
+                0.00%
+            </strong>
+
+
+            <div class="metric-footer">
+
+                <span>
+                    intentionally not automated
+                </span>
+
+            </div>
+
+        </article>
+
     </div>
 
 
-    <script src="/static/app.js?v=2"></script>
+
+    <!-- IMPACT STORY -->
+
+    <div class="impact-panel">
+
+        <div class="impact-copy">
+
+            <div class="eyebrow">
+                THE DIFFERENCE
+            </div>
+
+            <h3>
+                Don't maximize
+                retries.
+                <span>
+                    Maximize safe recovery.
+                </span>
+            </h3>
+
+            <p>
+
+                Revive separates diagnosis from decision-making.
+                AI identifies the likely cause. Deterministic
+                policy decides what is allowed.
+
+            </p>
+
+        </div>
+
+
+        <div class="impact-flow">
+
+            <div class="impact-flow-node">
+
+                <small>
+                    01
+                </small>
+
+                <strong>
+                    Revenue at risk
+                </strong>
+
+                <span>
+                    Failed payment
+                </span>
+
+            </div>
+
+
+            <div class="impact-arrow">
+                →
+            </div>
+
+
+            <div class="impact-flow-node">
+
+                <small>
+                    02
+                </small>
+
+                <strong>
+                    AI diagnosis
+                </strong>
+
+                <span>
+                    Root cause
+                </span>
+
+            </div>
+
+
+            <div class="impact-arrow">
+                →
+            </div>
+
+
+            <div class="impact-flow-node">
+
+                <small>
+                    03
+                </small>
+
+                <strong>
+                    Guardrails
+                </strong>
+
+                <span>
+                    Safe action
+                </span>
+
+            </div>
+
+
+            <div class="impact-arrow">
+                →
+            </div>
+
+
+            <div class="impact-flow-node final">
+
+                <small>
+                    04
+                </small>
+
+                <strong>
+                    Recovery
+                </strong>
+
+                <span>
+                    Revenue captured
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     ENGINE ARCHITECTURE
+===================================================== -->
+
+<section class="section architecture-section">
+
+    <div class="section-heading">
+
+        <div>
+
+            <div class="eyebrow">
+                THE ENGINE
+            </div>
+
+            <h2>
+                Intelligence
+                <span>
+                    with boundaries.
+                </span>
+            </h2>
+
+        </div>
+
+        <p>
+
+            The AI layer never gets permission
+            to move money. It only contributes
+            diagnosis.
+
+        </p>
+
+    </div>
+
+
+
+    <div class="architecture">
+
+        <div class="architecture-step">
+
+            <div class="architecture-number">
+                01
+            </div>
+
+            <div class="architecture-icon">
+                ◉
+            </div>
+
+            <h3>
+                Diagnose
+            </h3>
+
+            <p>
+                Classify the likely cause
+                of the payment failure.
+            </p>
+
+            <span class="architecture-tag">
+                AI
+            </span>
+
+        </div>
+
+
+        <div class="architecture-connector">
+            <span></span>
+        </div>
+
+
+        <div class="architecture-step emphasis">
+
+            <div class="architecture-number">
+                02
+            </div>
+
+            <div class="architecture-icon">
+                ◇
+            </div>
+
+            <h3>
+                Decide
+            </h3>
+
+            <p>
+                Apply deterministic policy
+                before recovery is allowed.
+            </p>
+
+            <span class="architecture-tag">
+                POLICY
+            </span>
+
+        </div>
+
+
+        <div class="architecture-connector">
+            <span></span>
+        </div>
+
+
+        <div class="architecture-step">
+
+            <div class="architecture-number">
+                03
+            </div>
+
+            <div class="architecture-icon">
+                ↗
+            </div>
+
+            <h3>
+                Execute
+            </h3>
+
+            <p>
+                Run only actions explicitly
+                permitted by policy.
+            </p>
+
+            <span class="architecture-tag">
+                EXECUTOR
+            </span>
+
+        </div>
+
+
+        <div class="architecture-connector">
+            <span></span>
+        </div>
+
+
+        <div class="architecture-step">
+
+            <div class="architecture-number">
+                04
+            </div>
+
+            <div class="architecture-icon">
+                ✓
+            </div>
+
+            <h3>
+                Audit
+            </h3>
+
+            <p>
+                Record the complete decision
+                and execution trail.
+            </p>
+
+            <span class="architecture-tag">
+                AUDIT
+            </span>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     EXPERIMENT
+===================================================== -->
+
+<section
+    class="section"
+    id="comparison"
+>
+
+    <div class="section-heading">
+
+        <div>
+
+            <div class="eyebrow">
+                CONTROLLED EXPERIMENT
+            </div>
+
+            <h2>
+                Blind retries
+                <span>
+                    vs Revive.
+                </span>
+            </h2>
+
+        </div>
+
+        <p>
+
+            The same payment events are processed
+            through both strategies. The difference
+            is how unsafe actions are handled.
+
+        </p>
+
+    </div>
+
+
+
+    <div class="experiment-card">
+
+        <div class="experiment-header">
+
+            <div>
+
+                <span>
+                    500 SHARED EVENTS
+                </span>
+
+                <h3>
+                    Recovery strategy comparison
+                </h3>
+
+            </div>
+
+            <div class="experiment-pill">
+                CONTROLLED TEST
+            </div>
+
+        </div>
+
+
+
+        <div class="experiment-columns">
+
+
+            <!-- BASELINE -->
+
+            <div class="experiment-column">
+
+                <div class="strategy-header">
+
+                    <div>
+
+                        <span>
+                            BASELINE
+                        </span>
+
+                        <h3>
+                            Naive retry
+                        </h3>
+
+                    </div>
+
+                    <div class="strategy-mark">
+                        ↗
+                    </div>
+
+                </div>
+
+
+                <div class="experiment-number">
+
+                    <span>
+                        REVENUE RECOVERED
+                    </span>
+
+                    <strong id="baselineRecovered">
+                        ₹0
+                    </strong>
+
+                </div>
+
+
+                <div class="experiment-row">
+
+                    <span>
+                        Recovery rate
+                    </span>
+
+                    <strong id="baselineRecoveryRate">
+                        0.00%
+                    </strong>
+
+                </div>
+
+
+                <div class="experiment-row danger">
+
+                    <span>
+                        Unsafe retries
+                    </span>
+
+                    <strong id="baselineUnsafeRetries">
+                        0
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- REVIVE -->
+
+            <div class="experiment-column revive-column">
+
+                <div class="strategy-header">
+
+                    <div>
+
+                        <span>
+                            REVIVE
+                        </span>
+
+                        <h3>
+                            Intelligent recovery
+                        </h3>
+
+                    </div>
+
+                    <div class="strategy-mark revive">
+                        ✦
+                    </div>
+
+                </div>
+
+
+                <div class="experiment-number">
+
+                    <span>
+                        REVENUE RECOVERED
+                    </span>
+
+                    <strong id="reviveRecovered">
+                        ₹0
+                    </strong>
+
+                </div>
+
+
+                <div class="experiment-row">
+
+                    <span>
+                        Recovery rate
+                    </span>
+
+                    <strong id="reviveRecoveryRate">
+                        0.00%
+                    </strong>
+
+                </div>
+
+
+                <div class="experiment-row safe">
+
+                    <span>
+                        Unsafe retries
+                    </span>
+
+                    <strong id="reviveUnsafeRetries">
+                        0
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="experiment-insight">
+
+            <div class="insight-check">
+                ✓
+            </div>
+
+            <div>
+
+                <span>
+                    SAFETY OUTCOME
+                </span>
+
+                <strong id="comparisonInsight">
+                    Revive prevents unsafe recovery actions.
+                </strong>
+
+                <p>
+                    Recovery is only executed after
+                    deterministic policy approval.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     ACTIVITY
+===================================================== -->
+
+<section
+    class="section activity-section"
+    id="activity"
+>
+
+    <div class="section-heading">
+
+        <div>
+
+            <div class="eyebrow">
+                RECOVERY ACTIVITY
+            </div>
+
+            <h2>
+                Inspect every
+                <span>
+                    decision.
+                </span>
+            </h2>
+
+        </div>
+
+        <p>
+
+            Run a recovery batch and select any
+            event to inspect its complete diagnosis,
+            policy decision and audit trail.
+
+        </p>
+
+    </div>
+
+
+
+    <div class="activity-layout">
+
+
+        <!-- EVENT LIST -->
+
+        <div class="activity-card">
+
+            <div class="activity-header">
+
+                <div>
+
+                    <span>
+                        RECENT EVENTS
+                    </span>
+
+                    <h3>
+                        Payment activity
+                    </h3>
+
+                </div>
+
+                <span
+                    id="activityCount"
+                    class="activity-count"
+                >
+                    0
+                </span>
+
+            </div>
+
+
+            <div
+                id="eventList"
+                class="event-list"
+            >
+
+                <div class="empty-state">
+
+                    <div class="empty-icon">
+                        ◇
+                    </div>
+
+                    <strong>
+                        No recovery events yet
+                    </strong>
+
+                    <span>
+                        Run the engine to populate activity.
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- AUDIT -->
+
+        <div
+            id="auditPanel"
+            class="audit-card"
+        >
+
+            <div class="audit-placeholder">
+
+                <div class="audit-placeholder-icon">
+                    ✦
+                </div>
+
+                <span>
+                    EVENT INVESTIGATION
+                </span>
+
+                <h3>
+                    Select a payment
+                </h3>
+
+                <p>
+                    Inspect why Revive did or did not
+                    attempt recovery.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =====================================================
+     FINAL CTA
+===================================================== -->
+
+<section class="final-section">
+
+    <div class="final-inner">
+
+        <div>
+
+            <div class="eyebrow">
+                REVIVE ENGINE
+            </div>
+
+            <h2>
+                Failed payments
+                <span>
+                    deserve better.
+                </span>
+            </h2>
+
+            <p>
+                Recover what is safe.
+                Stop what is not.
+            </p>
+
+        </div>
+
+
+        <button
+            id="finalRunBtn"
+            class="primary-button large"
+            type="button"
+        >
+
+            Run recovery
+
+            <span>
+                →
+            </span>
+
+        </button>
+
+    </div>
+
+</section>
+
+
+</main>
+
+
+
+<!-- =====================================================
+     TOAST
+===================================================== -->
+
+<div
+    id="toast"
+    class="toast"
+>
+
+    <span class="toast-dot"></span>
+
+    <span id="toastMessage">
+        Done
+    </span>
+
+</div>
+
+
+
+<script
+    src="/static/app.js?v=10"
+></script>
+
 
 </body>
+
 </html>

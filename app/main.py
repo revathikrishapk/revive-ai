@@ -83,3 +83,38 @@ def get_audit_log(event_id: str):
         "event_id": event_id,
         "audit_trail": records,
     }
+
+@app.get("/experiment/latest")
+def get_latest_experiment():
+
+    results_dir = Path(
+        "experiment_results"
+    )
+
+    if not results_dir.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="No experiment results found.",
+        )
+
+    files = sorted(
+        results_dir.glob(
+            "experiment_*.json"
+        )
+    )
+
+    if not files:
+        raise HTTPException(
+            status_code=404,
+            detail="No experiment results found.",
+        )
+
+    latest_file = files[-1]
+
+    with open(
+        latest_file,
+        "r",
+        encoding="utf-8",
+    ) as file:
+
+        return json.load(file)
