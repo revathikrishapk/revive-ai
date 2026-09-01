@@ -1,8 +1,8 @@
 /* =========================================================
    REVIVE — FRONTEND APPLICATION
-   Connected to the actual FastAPI backend
+   Recovery Run UX + Dashboard
    ========================================================= */
-console.log("REVIVE NEW APP.JS LOADED");
+
 const API_BASE = "";
 
 
@@ -20,13 +20,11 @@ function $(id) {
    ========================================================= */
 
 function formatCurrency(value) {
-    const amount = Number(value || 0);
-
     return new Intl.NumberFormat("en-IN", {
         style: "currency",
         currency: "INR",
         maximumFractionDigits: 0
-    }).format(amount);
+    }).format(Number(value || 0));
 }
 
 
@@ -46,19 +44,30 @@ function formatName(value) {
 }
 
 
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+
 /* =========================================================
    TOAST
    ========================================================= */
 
 function showToast(message) {
-    const toast = $("toast");
-    const toastMessage = $("toastMessage");
 
-    if (!toast || !toastMessage) {
+    const toast = $("toast");
+    const messageElement = $("toastMessage");
+
+    if (!toast || !messageElement) {
         return;
     }
 
-    toastMessage.textContent = message;
+    messageElement.textContent = message;
 
     toast.classList.add("visible");
 
@@ -69,89 +78,731 @@ function showToast(message) {
 
 
 /* =========================================================
+   RECOVERY RUN OVERLAY
+   ========================================================= */
+
+function createRunOverlay() {
+
+    /*
+       Create the overlay dynamically.
+
+       This keeps the existing HTML clean and lets us
+       control the complete recovery animation from JS.
+    */
+
+    if ($("recoveryOverlay")) {
+        return;
+    }
+
+
+    const overlay = document.createElement("div");
+
+    overlay.id = "recoveryOverlay";
+
+    overlay.innerHTML = `
+        <div class="recovery-modal">
+
+            <div class="recovery-modal-top">
+
+                <span class="recovery-eyebrow">
+                    REVIVE ENGINE
+                </span>
+
+                <span class="recovery-live">
+                    <span></span>
+                    LIVE
+                </span>
+
+            </div>
+
+
+            <div class="recovery-modal-content">
+
+                <div class="recovery-orb">
+                    <div class="recovery-orb-inner">
+                        ✦
+                    </div>
+                </div>
+
+
+                <h2 id="recoveryTitle">
+                    Preparing recovery
+                </h2>
+
+                <p id="recoveryDescription">
+                    Initializing the recovery engine...
+                </p>
+
+
+                <div class="recovery-progress">
+
+                    <div
+                        id="recoveryProgressBar"
+                        class="recovery-progress-bar"
+                    ></div>
+
+                </div>
+
+
+                <div class="recovery-steps">
+
+                    <div
+                        class="recovery-step"
+                        data-step="1"
+                    >
+                        <span class="step-icon">
+                            01
+                        </span>
+
+                        <span>
+                            Analyze failures
+                        </span>
+                    </div>
+
+
+                    <div
+                        class="recovery-step"
+                        data-step="2"
+                    >
+                        <span class="step-icon">
+                            02
+                        </span>
+
+                        <span>
+                            Diagnose causes
+                        </span>
+                    </div>
+
+
+                    <div
+                        class="recovery-step"
+                        data-step="3"
+                    >
+                        <span class="step-icon">
+                            03
+                        </span>
+
+                        <span>
+                            Apply guardrails
+                        </span>
+                    </div>
+
+
+                    <div
+                        class="recovery-step"
+                        data-step="4"
+                    >
+                        <span class="step-icon">
+                            04
+                        </span>
+
+                        <span>
+                            Execute recovery
+                        </span>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    `;
+
+
+    document.body.appendChild(
+        overlay
+    );
+
+
+    injectRecoveryStyles();
+}
+
+
+/* =========================================================
+   RECOVERY OVERLAY STYLES
+   ========================================================= */
+
+function injectRecoveryStyles() {
+
+    if ($("recoveryStyles")) {
+        return;
+    }
+
+
+    const style =
+        document.createElement("style");
+
+    style.id = "recoveryStyles";
+
+    style.textContent = `
+
+        #recoveryOverlay {
+
+            position: fixed;
+
+            inset: 0;
+
+            z-index: 1000;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            padding: 24px;
+
+            background: rgba(15, 15, 15, 0.55);
+
+            backdrop-filter: blur(14px);
+
+            opacity: 0;
+
+            pointer-events: none;
+
+            transition: opacity 0.25s ease;
+        }
+
+
+        #recoveryOverlay.visible {
+
+            opacity: 1;
+
+            pointer-events: auto;
+        }
+
+
+        .recovery-modal {
+
+            width: min(
+                620px,
+                100%
+            );
+
+            padding: 28px;
+
+            background: #ffffff;
+
+            border: 1px solid #e5e5e1;
+
+            border-radius: 24px;
+
+            box-shadow:
+                0 40px 120px
+                rgba(0, 0, 0, 0.22);
+
+            transform: translateY(15px)
+                       scale(0.98);
+
+            transition:
+                transform 0.3s ease;
+        }
+
+
+        #recoveryOverlay.visible
+        .recovery-modal {
+
+            transform:
+                translateY(0)
+                scale(1);
+        }
+
+
+        .recovery-modal-top {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+        }
+
+
+        .recovery-eyebrow {
+
+            color: #146ef5;
+
+            font-size: 10px;
+
+            font-weight: 700;
+
+            letter-spacing: 0.13em;
+        }
+
+
+        .recovery-live {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 7px;
+
+            color: #16834b;
+
+            font-size: 9px;
+
+            font-weight: 700;
+
+            letter-spacing: 0.08em;
+        }
+
+
+        .recovery-live span {
+
+            width: 6px;
+
+            height: 6px;
+
+            border-radius: 50%;
+
+            background: #16834b;
+
+            animation:
+                recoveryPulse
+                1.2s infinite;
+        }
+
+
+        .recovery-modal-content {
+
+            padding:
+                55px
+                25px
+                25px;
+
+            text-align: center;
+        }
+
+
+        .recovery-orb {
+
+            width: 70px;
+
+            height: 70px;
+
+            margin: 0 auto 25px;
+
+            display: grid;
+
+            place-items: center;
+
+            border-radius: 50%;
+
+            background: #eaf2ff;
+
+            animation:
+                recoveryFloat
+                2.5s ease-in-out infinite;
+        }
+
+
+        .recovery-orb-inner {
+
+            width: 45px;
+
+            height: 45px;
+
+            display: grid;
+
+            place-items: center;
+
+            border-radius: 50%;
+
+            background: #146ef5;
+
+            color: white;
+
+            font-size: 19px;
+
+            box-shadow:
+                0 10px 30px
+                rgba(20, 110, 245, 0.25);
+        }
+
+
+        .recovery-modal h2 {
+
+            font-family:
+                "Manrope",
+                sans-serif;
+
+            font-size: 30px;
+
+            line-height: 1;
+
+            letter-spacing: -0.05em;
+        }
+
+
+        .recovery-modal p {
+
+            margin-top: 10px;
+
+            color: #777777;
+
+            font-size: 13px;
+        }
+
+
+        .recovery-progress {
+
+            height: 5px;
+
+            margin-top: 35px;
+
+            overflow: hidden;
+
+            border-radius: 999px;
+
+            background: #f1f1ee;
+        }
+
+
+        .recovery-progress-bar {
+
+            width: 0;
+
+            height: 100%;
+
+            border-radius: inherit;
+
+            background: #146ef5;
+
+            transition:
+                width 0.7s
+                cubic-bezier(
+                    0.22,
+                    1,
+                    0.36,
+                    1
+                );
+        }
+
+
+        .recovery-steps {
+
+            margin-top: 30px;
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(4, 1fr);
+
+            gap: 8px;
+        }
+
+
+        .recovery-step {
+
+            padding: 13px 8px;
+
+            border: 1px solid #e5e5e1;
+
+            border-radius: 10px;
+
+            color: #999999;
+
+            font-size: 9px;
+
+            transition:
+                background 0.25s ease,
+                color 0.25s ease,
+                border-color 0.25s ease;
+        }
+
+
+        .recovery-step.active {
+
+            border-color: #c9dbff;
+
+            background: #eaf2ff;
+
+            color: #146ef5;
+        }
+
+
+        .recovery-step.complete {
+
+            border-color: #ccebd9;
+
+            background: #e9f7ef;
+
+            color: #16834b;
+        }
+
+
+        .step-icon {
+
+            display: block;
+
+            margin-bottom: 6px;
+
+            font-size: 8px;
+
+            font-weight: 700;
+        }
+
+
+        @keyframes recoveryPulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+
+        @keyframes recoveryFloat {
+
+            0%,
+            100% {
+                transform:
+                    translateY(0);
+            }
+
+            50% {
+                transform:
+                    translateY(-6px);
+            }
+        }
+
+
+        @media (max-width: 600px) {
+
+            .recovery-modal-content {
+
+                padding:
+                    45px
+                    5px
+                    10px;
+            }
+
+
+            .recovery-steps {
+
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+        }
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+}
+
+
+/* =========================================================
+   SHOW / HIDE OVERLAY
+   ========================================================= */
+
+function showRecoveryOverlay() {
+
+    createRunOverlay();
+
+    const overlay =
+        $("recoveryOverlay");
+
+    requestAnimationFrame(() => {
+
+        overlay.classList.add(
+            "visible"
+        );
+
+    });
+}
+
+
+function hideRecoveryOverlay() {
+
+    const overlay =
+        $("recoveryOverlay");
+
+    if (!overlay) {
+        return;
+    }
+
+    overlay.classList.remove(
+        "visible"
+    );
+}
+
+
+/* =========================================================
+   RECOVERY STEP ANIMATION
+   ========================================================= */
+
+function updateRecoveryStep(
+    stepNumber,
+    title,
+    description,
+    progress
+) {
+
+    $("recoveryTitle").textContent =
+        title;
+
+    $("recoveryDescription").textContent =
+        description;
+
+    $("recoveryProgressBar").style.width =
+        `${progress}%`;
+
+
+    document
+        .querySelectorAll(".recovery-step")
+        .forEach(step => {
+
+            const number =
+                Number(
+                    step.dataset.step
+                );
+
+            step.classList.remove(
+                "active",
+                "complete"
+            );
+
+
+            if (
+                number <
+                stepNumber
+            ) {
+
+                step.classList.add(
+                    "complete"
+                );
+
+            } else if (
+                number ===
+                stepNumber
+            ) {
+
+                step.classList.add(
+                    "active"
+                );
+            }
+
+        });
+}
+
+
+function wait(ms) {
+
+    return new Promise(
+        resolve =>
+            setTimeout(
+                resolve,
+                ms
+            )
+    );
+}
+
+
+/* =========================================================
    API — RUN BATCH
    ========================================================= */
 
 async function runRecoveryBatch() {
 
-    /*
-       Your FastAPI endpoint is:
+    const response =
+        await fetch(
+            `${API_BASE}/run-batch?count=80`,
+            {
+                method: "POST"
+            }
+        );
 
-       POST /run-batch?count=80
-
-       It returns the report directly.
-    */
-
-    const response = await fetch(
-        `${API_BASE}/run-batch?count=80`,
-        {
-            method: "POST"
-        }
-    );
 
     if (!response.ok) {
 
         let message =
             `Request failed (${response.status})`;
 
+
         try {
+
             const errorData =
                 await response.json();
 
             if (errorData.detail) {
-                message = errorData.detail;
-            }
-
-        } catch (_) {
-            // Keep the default error message.
-        }
-
-        throw new Error(message);
-    }
-
-    return await response.json();
-}
-
-
-/* =========================================================
-   API — AUDIT LOG
-   ========================================================= */
-
-async function getAuditLog(eventId) {
-
-    const response = await fetch(
-        `${API_BASE}/audit-log/${encodeURIComponent(eventId)}`
-    );
-
-    if (!response.ok) {
-
-        let message =
-            `Audit request failed (${response.status})`;
-
-        try {
-            const errorData =
-                await response.json();
-
-            if (errorData.detail) {
-                message = errorData.detail;
+                message =
+                    errorData.detail;
             }
 
         } catch (_) {
             // Keep default message.
         }
 
-        throw new Error(message);
+
+        throw new Error(
+            message
+        );
     }
+
 
     return await response.json();
 }
 
 
 /* =========================================================
-   BUTTON LOADING STATE
+   API — AUDIT
    ========================================================= */
 
-function setLoading(isLoading) {
+async function getAuditLog(
+    eventId
+) {
+
+    const response =
+        await fetch(
+            `${API_BASE}/audit-log/${encodeURIComponent(eventId)}`
+        );
+
+
+    if (!response.ok) {
+
+        let message =
+            `Audit request failed (${response.status})`;
+
+
+        try {
+
+            const errorData =
+                await response.json();
+
+            if (errorData.detail) {
+                message =
+                    errorData.detail;
+            }
+
+        } catch (_) {
+            // Keep default message.
+        }
+
+
+        throw new Error(
+            message
+        );
+    }
+
+
+    return await response.json();
+}
+
+
+/* =========================================================
+   BUTTON STATE
+   ========================================================= */
+
+function setButtonsLoading(
+    isLoading
+) {
 
     const buttons = [
         $("runBatchBtn"),
@@ -159,62 +810,52 @@ function setLoading(isLoading) {
         $("finalRunBtn")
     ];
 
+
     buttons.forEach(button => {
 
         if (!button) {
             return;
         }
 
-        if (isLoading) {
 
-            if (!button.dataset.originalText) {
-                button.dataset.originalText =
-                    button.innerHTML;
-            }
+        button.disabled =
+            isLoading;
 
-            button.disabled = true;
-            button.classList.add("loading");
 
-            button.innerHTML =
-                "Running recovery...";
+        button.classList.toggle(
+            "loading",
+            isLoading
+        );
 
-        } else {
-
-            button.disabled = false;
-            button.classList.remove("loading");
-
-            if (button.dataset.originalText) {
-
-                button.innerHTML =
-                    button.dataset.originalText;
-
-                delete button.dataset.originalText;
-            }
-        }
     });
 }
 
 
 /* =========================================================
-   KPI METRICS
+   METRICS
    ========================================================= */
 
-function updateMetrics(report) {
+function updateMetrics(
+    report
+) {
 
     $("atRiskMetric").textContent =
         formatCurrency(
             report.total_at_risk
         );
 
+
     $("recoveredMetric").textContent =
         formatCurrency(
             report.total_recovered
         );
 
+
     $("recoveryRateMetric").textContent =
         formatPercent(
             report.recovery_rate
         );
+
 
     $("escalationRateMetric").textContent =
         formatPercent(
@@ -227,13 +868,17 @@ function updateMetrics(report) {
    PAYMENT TYPE PERFORMANCE
    ========================================================= */
 
-function updatePaymentTypePerformance(report) {
+function updatePaymentTypePerformance(
+    report
+) {
 
     const stats =
         report.by_payment_type || {};
 
+
     const oneOff =
         stats.one_off || {};
+
 
     const subscription =
         stats.subscription || {};
@@ -244,6 +889,7 @@ function updatePaymentTypePerformance(report) {
             oneOff.recovery_rate || 0
         );
 
+
     const subscriptionRate =
         Number(
             subscription.recovery_rate || 0
@@ -252,6 +898,7 @@ function updatePaymentTypePerformance(report) {
 
     $("oneOffEvents").textContent =
         `${oneOff.events || 0} events`;
+
 
     $("subscriptionEvents").textContent =
         `${subscription.events || 0} events`;
@@ -262,6 +909,7 @@ function updatePaymentTypePerformance(report) {
             oneOffRate
         );
 
+
     $("subscriptionRate").textContent =
         formatPercent(
             subscriptionRate
@@ -269,10 +917,17 @@ function updatePaymentTypePerformance(report) {
 
 
     $("oneOffBar").style.width =
-        `${Math.min(oneOffRate, 100)}%`;
+        `${Math.min(
+            oneOffRate,
+            100
+        )}%`;
+
 
     $("subscriptionBar").style.width =
-        `${Math.min(subscriptionRate, 100)}%`;
+        `${Math.min(
+            subscriptionRate,
+            100
+        )}%`;
 }
 
 
@@ -280,19 +935,27 @@ function updatePaymentTypePerformance(report) {
    FAILURE CATEGORIES
    ========================================================= */
 
-function updateCategoryList(report) {
+function updateCategoryList(
+    report
+) {
 
     const container =
         $("categoryList");
 
+
     const categories =
         report.by_failure_category || {};
 
+
     const entries =
-        Object.entries(categories);
+        Object.entries(
+            categories
+        );
 
 
-    if (entries.length === 0) {
+    if (
+        entries.length === 0
+    ) {
 
         container.innerHTML = `
             <div class="empty-state">
@@ -304,10 +967,6 @@ function updateCategoryList(report) {
     }
 
 
-    /*
-       Most frequent failure categories first.
-    */
-
     entries.sort(
         ([, a], [, b]) =>
             Number(b.events || 0)
@@ -318,38 +977,50 @@ function updateCategoryList(report) {
 
     container.innerHTML =
         entries
-            .map(([category, stats]) => {
+            .map(
+                ([category, stats]) => {
 
-                return `
-                    <div class="category-item">
+                    return `
+                        <div
+                            class="category-item"
+                        >
 
-                        <div>
+                            <div>
 
-                            <div class="category-name">
-                                ${formatName(category)}
+                                <div
+                                    class="category-name"
+                                >
+                                    ${formatName(
+                                        category
+                                    )}
+                                </div>
+
+                                <div
+                                    class="category-meta"
+                                >
+                                    ${stats.events || 0}
+                                    events
+                                    ·
+                                    ${formatCurrency(
+                                        stats.recovered || 0
+                                    )}
+                                    recovered
+                                </div>
+
                             </div>
 
-                            <div class="category-meta">
-                                ${stats.events || 0} events
-                                ·
-                                ${formatCurrency(
-                                    stats.recovered || 0
+                            <div
+                                class="category-rate"
+                            >
+                                ${formatPercent(
+                                    stats.recovery_rate
                                 )}
-                                recovered
                             </div>
 
                         </div>
-
-                        <div class="category-rate">
-                            ${formatPercent(
-                                stats.recovery_rate
-                            )}
-                        </div>
-
-                    </div>
-                `;
-
-            })
+                    `;
+                }
+            )
             .join("");
 }
 
@@ -358,22 +1029,29 @@ function updateCategoryList(report) {
    EVENT STATUS
    ========================================================= */
 
-function getEventStatus(event) {
+function getEventStatus(
+    event
+) {
 
     const recoveryStatus =
         event.recovery_status || "";
 
+
     const decision =
         event.decision || "";
+
 
     const status =
         event.status || "";
 
 
     if (
-        recoveryStatus === "recovered"
+        recoveryStatus ===
+        "recovered"
         ||
-        Number(event.recovered_amount || 0) > 0
+        Number(
+            event.recovered_amount || 0
+        ) > 0
     ) {
 
         return {
@@ -384,7 +1062,8 @@ function getEventStatus(event) {
 
 
     if (
-        recoveryStatus === "failed"
+        recoveryStatus ===
+        "failed"
     ) {
 
         return {
@@ -395,9 +1074,11 @@ function getEventStatus(event) {
 
 
     if (
-        decision === "escalate_to_human"
+        decision ===
+        "escalate_to_human"
         ||
-        decision === "ESCALATE_TO_HUMAN"
+        decision ===
+        "ESCALATE_TO_HUMAN"
     ) {
 
         return {
@@ -408,7 +1089,8 @@ function getEventStatus(event) {
 
 
     if (
-        status === "duplicate_skipped"
+        status ===
+        "duplicate_skipped"
     ) {
 
         return {
@@ -429,10 +1111,13 @@ function getEventStatus(event) {
    EVENT LIST
    ========================================================= */
 
-function updateEventList(report) {
+function updateEventList(
+    report
+) {
 
     const container =
         $("eventList");
+
 
     const events =
         report.events || [];
@@ -442,7 +1127,9 @@ function updateEventList(report) {
         events.length;
 
 
-    if (events.length === 0) {
+    if (
+        events.length === 0
+    ) {
 
         container.innerHTML = `
             <div class="empty-state">
@@ -454,85 +1141,85 @@ function updateEventList(report) {
     }
 
 
-    /*
-       Display the first 50 events.
-
-       The report may contain all 80 events,
-       but keeping the visible list smaller
-       keeps the UI clean.
-    */
-
     const visibleEvents =
-        events.slice(0, 50);
+        events.slice(
+            0,
+            50
+        );
 
 
     container.innerHTML =
         visibleEvents
-            .map((event, index) => {
+            .map(
+                (event, index) => {
 
-                const status =
-                    getEventStatus(event);
+                    const eventStatus =
+                        getEventStatus(
+                            event
+                        );
 
 
-                return `
-                    <div
-                        class="event-item"
-                        data-event-index="${index}"
-                    >
+                    return `
+                        <div
+                            class="event-item"
+                            data-event-index="${index}"
+                        >
 
-                        <div class="event-main">
-
-                            <strong>
-                                ${formatName(
-                                    event.diagnosis
-                                    || "unknown"
-                                )}
-                            </strong>
-
-                            <span>
-                                ${formatName(
-                                    event.payment_type
-                                    || "unknown"
-                                )}
-                                ·
-                                ${escapeHtml(
-                                    event.event_id
-                                )}
-                            </span>
-
-                            <span
-                                class="
-                                    event-status
-                                    ${status.className}
-                                "
+                            <div
+                                class="event-main"
                             >
-                                ${status.label}
-                            </span>
+
+                                <strong>
+                                    ${formatName(
+                                        event.diagnosis
+                                        ||
+                                        "unknown"
+                                    )}
+                                </strong>
+
+                                <span>
+                                    ${formatName(
+                                        event.payment_type
+                                        ||
+                                        "unknown"
+                                    )}
+                                    ·
+                                    ${escapeHtml(
+                                        event.event_id
+                                    )}
+                                </span>
+
+                                <span
+                                    class="
+                                        event-status
+                                        ${eventStatus.className}
+                                    "
+                                >
+                                    ${eventStatus.label}
+                                </span>
+
+                            </div>
+
+
+                            <div
+                                class="event-amount"
+                            >
+                                ${formatCurrency(
+                                    event.amount
+                                )}
+                            </div>
 
                         </div>
-
-
-                        <div class="event-amount">
-
-                            ${formatCurrency(
-                                event.amount
-                            )}
-
-                        </div>
-
-                    </div>
-                `;
-
-            })
+                    `;
+                }
+            )
             .join("");
 
 
-    /*
-       Attach event listeners.
-    */
-
     container
-        .querySelectorAll(".event-item")
+        .querySelectorAll(
+            ".event-item"
+        )
         .forEach(item => {
 
             item.addEventListener(
@@ -543,6 +1230,7 @@ function updateEventList(report) {
                         Number(
                             item.dataset.eventIndex
                         );
+
 
                     await selectEvent(
                         visibleEvents[index],
@@ -564,7 +1252,9 @@ async function selectEvent(
 ) {
 
     document
-        .querySelectorAll(".event-item")
+        .querySelectorAll(
+            ".event-item"
+        )
         .forEach(item => {
 
             item.classList.remove(
@@ -590,9 +1280,9 @@ async function selectEvent(
                 event.event_id
             );
 
+
         renderAuditTrace(
-            audit,
-            event
+            audit
         );
 
     } catch (error) {
@@ -601,6 +1291,7 @@ async function selectEvent(
             "Audit error:",
             error
         );
+
 
         renderAuditError(
             error.message
@@ -613,12 +1304,12 @@ async function selectEvent(
    AUDIT LOADING
    ========================================================= */
 
-function renderAuditLoading(event) {
+function renderAuditLoading(
+    event
+) {
 
-    const panel =
-        $("auditPanel");
+    $("auditPanel").innerHTML = `
 
-    panel.innerHTML = `
         <div class="audit-header">
 
             <h3>
@@ -640,6 +1331,7 @@ function renderAuditLoading(event) {
 
         </div>
 
+
         <div
             id="auditTrace"
             class="audit-trace"
@@ -659,30 +1351,20 @@ function renderAuditLoading(event) {
    ========================================================= */
 
 function renderAuditTrace(
-    audit,
-    event
+    audit
 ) {
 
     const container =
         $("auditTrace");
 
 
-    /*
-       Your backend returns:
-
-       {
-           "event_id": "...",
-           "audit_trail": [...]
-       }
-
-       So this is the important correction.
-    */
-
     const entries =
         audit.audit_trail || [];
 
 
-    if (entries.length === 0) {
+    if (
+        entries.length === 0
+    ) {
 
         container.innerHTML = `
             <div class="empty-state">
@@ -696,97 +1378,104 @@ function renderAuditTrace(
 
     container.innerHTML =
         entries
-            .map(entry => {
+            .map(
+                entry => {
 
-                const stage =
-                    entry.stage
-                    ||
-                    entry.state
-                    ||
-                    entry.event
-                    ||
-                    entry.action
-                    ||
-                    "EVENT";
-
-
-                const detail =
-                    entry.detail
-                    ||
-                    entry.message
-                    ||
-                    entry.reason
-                    ||
-                    "";
+                    const stage =
+                        entry.stage
+                        ||
+                        entry.state
+                        ||
+                        entry.event
+                        ||
+                        entry.action
+                        ||
+                        "EVENT";
 
 
-                let metadata = "";
+                    const detail =
+                        entry.detail
+                        ||
+                        entry.message
+                        ||
+                        entry.reason
+                        ||
+                        "";
 
 
-                /*
-                   Show additional audit metadata
-                   when available.
-                */
-
-                const data =
-                    entry.data
-                    ||
-                    entry.metadata
-                    ||
-                    null;
+                    let metadata = "";
 
 
-                if (
-                    data
-                    &&
-                    typeof data === "object"
-                ) {
-
-                    metadata = `
-                        <pre>${escapeHtml(
-                            JSON.stringify(
-                                data,
-                                null,
-                                2
-                            )
-                        )}</pre>
-                    `;
-                }
+                    const data =
+                        entry.data
+                        ||
+                        entry.metadata
+                        ||
+                        null;
 
 
-                return `
-                    <div class="audit-step">
+                    if (
+                        data
+                        &&
+                        typeof data ===
+                            "object"
+                    ) {
 
-                        <div class="audit-dot"></div>
+                        metadata = `
+                            <pre>
+${escapeHtml(
+    JSON.stringify(
+        data,
+        null,
+        2
+    )
+)}
+                            </pre>
+                        `;
+                    }
 
-                        <div>
 
-                            <strong>
-                                ${formatName(
-                                    String(stage)
-                                )}
-                            </strong>
+                    return `
+                        <div
+                            class="audit-step"
+                        >
 
-                            ${
-                                detail
+                            <div
+                                class="audit-dot"
+                            ></div>
+
+                            <div>
+
+                                <strong>
+                                    ${formatName(
+                                        String(
+                                            stage
+                                        )
+                                    )}
+                                </strong>
+
+                                ${
+                                    detail
                                     ? `
                                         <span>
                                             ${escapeHtml(
-                                                String(detail)
+                                                String(
+                                                    detail
+                                                )
                                             )}
                                         </span>
                                     `
                                     : ""
-                            }
+                                }
 
-                            ${metadata}
+                                ${metadata}
+
+                            </div>
 
                         </div>
-
-                    </div>
-                `;
-
-            })
+                    `;
+                }
+            )
             .join("");
 }
 
@@ -802,9 +1491,11 @@ function renderAuditError(
     const container =
         $("auditTrace");
 
+
     if (!container) {
         return;
     }
+
 
     container.innerHTML = `
         <div class="empty-state">
@@ -813,7 +1504,9 @@ function renderAuditError(
 
             <br><br>
 
-            ${escapeHtml(message)}
+            ${escapeHtml(
+                message
+            )}
 
         </div>
     `;
@@ -821,25 +1514,12 @@ function renderAuditError(
 
 
 /* =========================================================
-   HTML ESCAPING
+   DASHBOARD UPDATE
    ========================================================= */
 
-function escapeHtml(value) {
-
-    return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
-
-
-/* =========================================================
-   UPDATE DASHBOARD
-   ========================================================= */
-
-function updateDashboard(report) {
+function updateDashboard(
+    report
+) {
 
     updateMetrics(
         report
@@ -860,28 +1540,120 @@ function updateDashboard(report) {
 
 
 /* =========================================================
-   RUN RECOVERY
+   MAIN RECOVERY FLOW
    ========================================================= */
 
 async function handleRunBatch() {
 
-    setLoading(true);
+    /*
+       Prevent duplicate requests.
+    */
+
+    if (
+        window.reviveBatchRunning
+    ) {
+        return;
+    }
+
+
+    window.reviveBatchRunning =
+        true;
+
+
+    setButtonsLoading(
+        true
+    );
+
+
+    showRecoveryOverlay();
+
 
     try {
 
-        console.log(
-            "Starting Revive recovery batch..."
+        /* -----------------------------------------------
+           STEP 1
+           ----------------------------------------------- */
+
+        updateRecoveryStep(
+            1,
+            "Analyzing failed payments",
+            "Finding revenue at risk across the payment batch...",
+            18
         );
 
+
+        await wait(550);
+
+
+        /* -----------------------------------------------
+           STEP 2
+           ----------------------------------------------- */
+
+        updateRecoveryStep(
+            2,
+            "Diagnosing failure causes",
+            "Classifying failures and measuring AI confidence...",
+            42
+        );
+
+
+        await wait(550);
+
+
+        /* -----------------------------------------------
+           STEP 3
+           ----------------------------------------------- */
+
+        updateRecoveryStep(
+            3,
+            "Applying recovery guardrails",
+            "Checking retry limits, economic floors and safety rules...",
+            67
+        );
+
+
+        await wait(500);
+
+
+        /* -----------------------------------------------
+           ACTUAL BACKEND CALL
+           ----------------------------------------------- */
 
         const report =
             await runRecoveryBatch();
 
 
-        console.log(
-            "Recovery report:",
-            report
+        /* -----------------------------------------------
+           STEP 4
+           ----------------------------------------------- */
+
+        updateRecoveryStep(
+            4,
+            "Executing eligible recovery",
+            "Running approved recovery actions and recording outcomes...",
+            88
         );
+
+
+        await wait(650);
+
+
+        /* -----------------------------------------------
+           COMPLETE
+           ----------------------------------------------- */
+
+        updateRecoveryStep(
+            4,
+            "Recovery complete",
+            `${report.events_processed || report.events?.length || 0} payment events processed successfully.`,
+            100
+        );
+
+
+        await wait(750);
+
+
+        hideRecoveryOverlay();
 
 
         updateDashboard(
@@ -895,26 +1667,25 @@ async function handleRunBatch() {
 
 
         /*
-           Move the user to the metrics
-           after the batch finishes.
+           Scroll to metrics.
         */
 
-        const metricsSection =
+        const metrics =
             document.querySelector(
                 ".metrics-section"
             );
 
 
-        if (metricsSection) {
+        if (metrics) {
 
             setTimeout(() => {
 
-                metricsSection.scrollIntoView({
+                metrics.scrollIntoView({
                     behavior: "smooth",
                     block: "start"
                 });
 
-            }, 250);
+            }, 200);
         }
 
 
@@ -926,27 +1697,37 @@ async function handleRunBatch() {
         );
 
 
+        hideRecoveryOverlay();
+
+
         showToast(
             error.message
             ||
-            "Unable to run recovery batch."
+            "Recovery batch failed."
         );
+
 
     } finally {
 
-        setLoading(false);
+        setButtonsLoading(
+            false
+        );
+
+
+        window.reviveBatchRunning =
+            false;
     }
 }
 
 
 /* =========================================================
-   INITIALIZE
+   INITIALIZATION
    ========================================================= */
 
 function initialize() {
 
     console.log(
-        "Revive frontend initialized."
+        "REVIVE frontend initialized."
     );
 
 
@@ -957,19 +1738,33 @@ function initialize() {
     ];
 
 
-    buttons.forEach(button => {
+    buttons.forEach(
+        button => {
 
-        if (!button) {
-            return;
+            if (!button) {
+
+                console.warn(
+                    "Revive: button not found."
+                );
+
+                return;
+            }
+
+
+            button.addEventListener(
+                "click",
+                handleRunBatch
+            );
         }
+    );
 
 
-        button.addEventListener(
-            "click",
-            handleRunBatch
-        );
+    /*
+       Create overlay early so the first click
+       feels instantaneous.
+    */
 
-    });
+    createRunOverlay();
 }
 
 
