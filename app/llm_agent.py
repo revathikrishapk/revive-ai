@@ -20,8 +20,8 @@ load_dotenv()
 # =========================================================
 
 MODEL_NAME = os.getenv(
-    "DEEPSEEK_MODEL",
-    "deepseek-v4-flash",
+    "OPENROUTER_MODEL",
+    "openrouter/free",
 )
 
 MAX_DIAGNOSIS_ATTEMPTS = 3
@@ -33,9 +33,9 @@ MAX_DIAGNOSIS_ATTEMPTS = 3
 
 class DiagnosisAgent:
     """
-    AI diagnosis layer.
+    OpenRouter-powered diagnosis layer.
 
-    The agent only diagnoses payment failures.
+    The LLM ONLY diagnoses the payment failure.
 
     It has NO authority to:
     - retry payments
@@ -44,27 +44,43 @@ class DiagnosisAgent:
     - execute payments
     - move money
 
-    The deterministic policy engine handles those decisions.
+    The deterministic policy engine makes
+    all recovery decisions.
     """
 
     def __init__(self):
 
         self.api_key = os.getenv(
-            "DEEPSEEK_API_KEY"
+            "OPENROUTER_API_KEY"
         )
 
         self.client = None
 
-        # -------------------------------------------------
-        # REAL AI MODE
-        # -------------------------------------------------
-
         if self.api_key:
 
             self.client = OpenAI(
+                base_url="https://openrouter.ai/api/v1",
                 api_key=self.api_key,
-                base_url="https://api.deepseek.com",
             )
+
+        # -------------------------------------------------
+        # Diagnosis cache
+        # -------------------------------------------------
+
+        self._diagnosis_cache = {}
+
+        # -------------------------------------------------
+        # Runtime statistics
+        # -------------------------------------------------
+
+        self.diagnosis_stats = {
+            "successful": 0,
+            "fallback": 0,
+            "validation_failures": 0,
+            "provider_failures": 0,
+            "cache_hits": 0,
+            "api_calls": 0,
+        }
 
 
     # =====================================================
@@ -77,29 +93,49 @@ class DiagnosisAgent:
     ) -> Diagnosis:
 
         # -------------------------------------------------
-        # DEVELOPMENT MODE
+        # CACHE
         # -------------------------------------------------
-        #
-        # If no API key is configured, use deterministic
-        # mock diagnosis.
-        #
-        # This allows the entire system to be developed
-        # without depending on an external AI provider.
+
+        cache_key = (
+            event.payment_type.value,
+            event.failure_message.strip().lower(),
+        )
+
+        if cache_key in self._diagnosis_cache:
+
+            self.diagnosis_stats[
+                "cache_hits"
+            ] += 1
+
+            return self._diagnosis_cache[
+                cache_key
+            ]
+
+
+        # -------------------------------------------------
+        # DEVELOPMENT FALLBACK
         # -------------------------------------------------
 
         if self.client is None:
 
-            return self._mock_diagnosis(
+            diagnosis = self._mock_diagnosis(
                 event
             )
 
+            self._diagnosis_cache[
+                cache_key
+            ] = diagnosis
+
+            self.diagnosis_stats[
+                "successful"
+            ] += 1
+
+            return diagnosis
+
 
         # -------------------------------------------------
-        # REAL AI MODE
+        # REAL OPENROUTER MODE
         # -------------------------------------------------
-
-        last_error = None
-
 
         for attempt in range(
             MAX_DIAGNOSIS_ATTEMPTS
@@ -107,41 +143,50 @@ class DiagnosisAgent:
 
             try:
 
-                # -----------------------------------------
-                # Call DeepSeek
-                # -----------------------------------------
+                self.diagnosis_stats[
+                    "api_calls"
+                ] += 1
 
-                diagnosis = self._call_deepseek(
+                diagnosis = self._call_openrouter(
                     event
                 )
 
-
-                # -----------------------------------------
-                # Validate AI output
-                # -----------------------------------------
-                #
-                # _call_deepseek normally returns a
-                # Diagnosis object.
-                #
-                # Tests may deliberately return a dict
-                # to simulate malformed provider output.
-                #
-                # Handle both safely.
-                # -----------------------------------------
+                # -------------------------------------------------
+                # Validate provider output
+                # -------------------------------------------------
 
                 if isinstance(
                     diagnosis,
                     Diagnosis,
                 ):
 
-                    return Diagnosis.model_validate(
-                        diagnosis.model_dump()
+                    diagnosis = (
+                        Diagnosis.model_validate(
+                            diagnosis.model_dump()
+                        )
                     )
 
+                else:
 
-                return Diagnosis.model_validate(
-                    diagnosis
-                )
+                    diagnosis = (
+                        Diagnosis.model_validate(
+                            diagnosis
+                        )
+                    )
+
+                # -------------------------------------------------
+                # Cache ONLY validated output
+                # -------------------------------------------------
+
+                self._diagnosis_cache[
+                    cache_key
+                ] = diagnosis
+
+                self.diagnosis_stats[
+                    "successful"
+                ] += 1
+
+                return diagnosis
 
 
             except (
@@ -149,56 +194,27 @@ class DiagnosisAgent:
                 ValueError,
                 TypeError,
                 json.JSONDecodeError,
-            ) as error:
+            ):
 
-                last_error = error
-
-                print(
-                    f"AI diagnosis validation failed "
-                    f"(attempt {attempt + 1}/"
-                    f"{MAX_DIAGNOSIS_ATTEMPTS}): "
-                    f"{error}"
-                )
+                self.diagnosis_stats[
+                    "validation_failures"
+                ] += 1
 
 
-            except Exception as error:
+            except Exception:
 
-                # -----------------------------------------
-                # Provider/API failures
-                # -----------------------------------------
-                #
-                # Examples:
-                # - insufficient balance
-                # - network error
-                # - timeout
-                # - authentication failure
-                #
-                # We DO NOT allow these failures to
-                # automatically create a recovery decision.
-                # -----------------------------------------
-
-                last_error = error
-
-                print(
-                    f"AI provider error "
-                    f"(attempt {attempt + 1}/"
-                    f"{MAX_DIAGNOSIS_ATTEMPTS}): "
-                    f"{error}"
-                )
+                self.diagnosis_stats[
+                    "provider_failures"
+                ] += 1
 
 
         # -------------------------------------------------
         # SAFE FALLBACK
         # -------------------------------------------------
-        #
-        # If AI repeatedly fails:
-        #
-        # UNKNOWN
-        # confidence = 0.0
-        #
-        # The deterministic policy engine will therefore
-        # refuse automatic recovery and escalate safely.
-        # -------------------------------------------------
+
+        self.diagnosis_stats[
+            "fallback"
+        ] += 1
 
         return Diagnosis(
             category=FailureCategory.UNKNOWN,
@@ -213,17 +229,42 @@ class DiagnosisAgent:
 
 
     # =====================================================
-    # DEEPSEEK API CALL
+    # STATISTICS
     # =====================================================
 
-    def _call_deepseek(
+    def get_stats(self) -> dict:
+        """
+        Return a copy of diagnosis runtime statistics.
+        """
+
+        return self.diagnosis_stats.copy()
+
+
+    def reset_stats(self) -> None:
+        """
+        Reset runtime statistics.
+
+        The diagnosis cache is intentionally preserved.
+        """
+
+        self.diagnosis_stats = {
+            "successful": 0,
+            "fallback": 0,
+            "validation_failures": 0,
+            "provider_failures": 0,
+            "cache_hits": 0,
+            "api_calls": 0,
+        }
+
+
+    # =====================================================
+    # OPENROUTER API CALL
+    # =====================================================
+
+    def _call_openrouter(
         self,
         event: FailedPaymentEvent,
     ) -> Diagnosis:
-
-        # -------------------------------------------------
-        # SYSTEM PROMPT
-        # -------------------------------------------------
 
         system_prompt = """
 You are the diagnosis component of a payment recovery system.
@@ -267,11 +308,6 @@ Keep reasoning concise and base it only on the supplied
 payment event.
 """
 
-
-        # -------------------------------------------------
-        # USER PROMPT
-        # -------------------------------------------------
-
         user_prompt = f"""
 Diagnose this payment failure.
 
@@ -285,87 +321,64 @@ Subscription ID: {event.subscription_id}
 Return JSON only.
 """
 
-
-        # -------------------------------------------------
-        # API REQUEST
-        # -------------------------------------------------
-
-        response = (
-            self.client
-            .chat
-            .completions
-            .create(
-                model=MODEL_NAME,
-
-                messages=[
-                    {
-                        "role": "system",
-                        "content": system_prompt,
-                    },
-                    {
-                        "role": "user",
-                        "content": user_prompt,
-                    },
-                ],
-
-                response_format={
-                    "type": "json_object",
+        response = self.client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {
+                    "role": "system",
+                    "content": system_prompt,
                 },
-
-                temperature=0,
-
-                max_tokens=200,
-            )
+                {
+                    "role": "user",
+                    "content": user_prompt,
+                },
+            ],
+            temperature=0,
+            response_format={
+                "type": "json_object"
+            },
         )
 
-
-        # -------------------------------------------------
-        # RESPONSE VALIDATION
-        # -------------------------------------------------
-
-        if not response.choices:
-
-            raise ValueError(
-                "DeepSeek returned no choices."
-            )
-
-
         content = (
-            response
-            .choices[0]
+            response.choices[0]
             .message
             .content
         )
 
-
         if not content:
 
             raise ValueError(
-                "DeepSeek returned an empty response."
+                "OpenRouter returned an empty response."
             )
-
-
-        # -------------------------------------------------
-        # PARSE JSON
-        # -------------------------------------------------
 
         parsed = json.loads(
             content
         )
 
-
-        # -------------------------------------------------
-        # PYDANTIC VALIDATION
-        # -------------------------------------------------
-        #
-        # This is the critical AI boundary.
-        #
-        # Invalid categories, invalid confidence values,
-        # missing fields, etc. are rejected here.
-        # -------------------------------------------------
-
         return Diagnosis.model_validate(
             parsed
+        )
+
+
+    # =====================================================
+    # BACKWARD-COMPATIBLE TEST HOOK
+    # =====================================================
+
+    def _call_deepseek(
+        self,
+        event: FailedPaymentEvent,
+    ) -> Diagnosis:
+        """
+        Backward-compatible hook.
+
+        The project uses OpenRouter.
+
+        Existing tests or older code may still reference
+        _call_deepseek, so this delegates to OpenRouter.
+        """
+
+        return self._call_openrouter(
+            event
         )
 
 
@@ -379,13 +392,12 @@ Return JSON only.
     ) -> Diagnosis:
 
         message = (
-            event.failure_message
-            .lower()
+            event.failure_message.lower()
         )
 
 
         # -------------------------------------------------
-        # NETWORK ERROR
+        # Network
         # -------------------------------------------------
 
         if (
@@ -396,9 +408,7 @@ Return JSON only.
 
             return Diagnosis(
                 category=FailureCategory.NETWORK_ERROR,
-
                 confidence=0.92,
-
                 reasoning=(
                     "The failure message indicates "
                     "a temporary network or bank "
@@ -408,7 +418,7 @@ Return JSON only.
 
 
         # -------------------------------------------------
-        # INSUFFICIENT FUNDS
+        # Insufficient funds
         # -------------------------------------------------
 
         if (
@@ -417,12 +427,8 @@ Return JSON only.
         ):
 
             return Diagnosis(
-                category=(
-                    FailureCategory.INSUFFICIENT_FUNDS
-                ),
-
+                category=FailureCategory.INSUFFICIENT_FUNDS,
                 confidence=0.95,
-
                 reasoning=(
                     "The failure message indicates "
                     "insufficient funds."
@@ -431,7 +437,7 @@ Return JSON only.
 
 
         # -------------------------------------------------
-        # EXPIRED CARD
+        # Expired card
         # -------------------------------------------------
 
         if (
@@ -440,12 +446,8 @@ Return JSON only.
         ):
 
             return Diagnosis(
-                category=(
-                    FailureCategory.EXPIRED_CARD
-                ),
-
+                category=FailureCategory.EXPIRED_CARD,
                 confidence=0.93,
-
                 reasoning=(
                     "The payment method appears "
                     "to be expired or invalid."
@@ -454,7 +456,7 @@ Return JSON only.
 
 
         # -------------------------------------------------
-        # FRAUD HOLD
+        # Fraud / security
         # -------------------------------------------------
 
         if (
@@ -463,12 +465,8 @@ Return JSON only.
         ):
 
             return Diagnosis(
-                category=(
-                    FailureCategory.FRAUD_HOLD
-                ),
-
+                category=FailureCategory.FRAUD_HOLD,
                 confidence=0.98,
-
                 reasoning=(
                     "The payment was blocked or held "
                     "for fraud or security review."
@@ -477,7 +475,7 @@ Return JSON only.
 
 
         # -------------------------------------------------
-        # MANDATE FAILURE
+        # Mandate
         # -------------------------------------------------
 
         if (
@@ -486,12 +484,8 @@ Return JSON only.
         ):
 
             return Diagnosis(
-                category=(
-                    FailureCategory.MANDATE_FAILURE
-                ),
-
+                category=FailureCategory.MANDATE_FAILURE,
                 confidence=0.90,
-
                 reasoning=(
                     "The failure is related to a "
                     "recurring subscription mandate."
@@ -500,14 +494,12 @@ Return JSON only.
 
 
         # -------------------------------------------------
-        # UNKNOWN
+        # Unknown
         # -------------------------------------------------
 
         return Diagnosis(
             category=FailureCategory.UNKNOWN,
-
             confidence=0.0,
-
             reasoning=(
                 "The failure could not be classified "
                 "with sufficient confidence."
@@ -521,10 +513,6 @@ Return JSON only.
 
 _agent = DiagnosisAgent()
 
-
-# =========================================================
-# EXISTING FUNCTION INTERFACE
-# =========================================================
 
 def diagnose_failure(
     event: FailedPaymentEvent,

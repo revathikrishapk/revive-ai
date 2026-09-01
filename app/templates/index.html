@@ -1487,6 +1487,249 @@
 <script
     src="/static/app.js?v=10"
 ></script>
+<!-- =====================================================
+     RUN ENGINE MODAL
+===================================================== -->
+
+<div
+    id="engineModal"
+    class="engine-modal"
+    aria-hidden="true"
+>
+    <div class="engine-modal-backdrop"></div>
+
+    <div class="engine-modal-card">
+
+        <div class="engine-modal-header">
+            <div>
+                <span class="eyebrow">
+                    REVIVE RECOVERY ENGINE
+                </span>
+
+                <h2 id="engineModalTitle">
+                    Processing payments
+                </h2>
+
+                <p id="engineModalSubtitle">
+                    Running the recovery pipeline.
+                </p>
+            </div>
+
+            <button
+                id="engineCloseBtn"
+                class="engine-close"
+                type="button"
+                aria-label="Close"
+            >
+                ×
+            </button>
+        </div>
+
+
+        <!-- Pipeline -->
+
+        <div class="engine-pipeline">
+
+            <div
+                class="engine-stage"
+                data-stage="ingestion"
+            >
+                <div class="stage-icon">
+                    ✓
+                </div>
+
+                <div>
+                    <strong>
+                        Ingestion
+                    </strong>
+
+                    <span>
+                        Receiving failed payment events
+                    </span>
+                </div>
+            </div>
+
+
+            <div
+                class="engine-stage"
+                data-stage="validation"
+            >
+                <div class="stage-icon">
+                    ✓
+                </div>
+
+                <div>
+                    <strong>
+                        Validation
+                    </strong>
+
+                    <span>
+                        Validating payment contracts
+                    </span>
+                </div>
+            </div>
+
+
+            <div
+                class="engine-stage"
+                data-stage="diagnosis"
+            >
+                <div class="stage-icon">
+                    AI
+                </div>
+
+                <div>
+                    <strong>
+                        Gemini Diagnosis
+                    </strong>
+
+                    <span>
+                        Classifying payment failure
+                    </span>
+                </div>
+            </div>
+
+
+            <div
+                class="engine-stage"
+                data-stage="policy"
+            >
+                <div class="stage-icon">
+                    P
+                </div>
+
+                <div>
+                    <strong>
+                        Policy Engine
+                    </strong>
+
+                    <span>
+                        Applying deterministic guardrails
+                    </span>
+                </div>
+            </div>
+
+
+            <div
+                class="engine-stage"
+                data-stage="execution"
+            >
+                <div class="stage-icon">
+                    →
+                </div>
+
+                <div>
+                    <strong>
+                        Recovery Execution
+                    </strong>
+
+                    <span>
+                        Executing approved actions
+                    </span>
+                </div>
+            </div>
+
+
+            <div
+                class="engine-stage"
+                data-stage="audit"
+            >
+                <div class="stage-icon">
+                    #
+                </div>
+
+                <div>
+                    <strong>
+                        Audit Trail
+                    </strong>
+
+                    <span>
+                        Recording every decision
+                    </span>
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- Progress -->
+
+        <div class="engine-progress">
+
+            <div class="engine-progress-meta">
+                <span id="engineProgressLabel">
+                    Preparing engine...
+                </span>
+
+                <strong id="engineProgressCount">
+                    0%
+                </strong>
+            </div>
+
+            <div class="engine-progress-track">
+                <div
+                    id="engineProgressBar"
+                    class="engine-progress-bar"
+                ></div>
+            </div>
+
+        </div>
+
+
+        <!-- Result -->
+
+        <div
+            id="engineResult"
+            class="engine-result"
+        >
+
+            <div class="engine-result-stat">
+                <span>
+                    Revenue recovered
+                </span>
+
+                <strong id="engineRecovered">
+                    ₹0
+                </strong>
+            </div>
+
+            <div class="engine-result-stat">
+                <span>
+                    Recovery rate
+                </span>
+
+                <strong id="engineRecoveryRate">
+                    0%
+                </strong>
+            </div>
+
+            <div class="engine-result-stat">
+                <span>
+                    Events processed
+                </span>
+
+                <strong id="engineEvents">
+                    0
+                </strong>
+            </div>
+
+        </div>
+
+
+        <div class="engine-modal-footer">
+
+            <button
+                id="engineDoneBtn"
+                class="primary-button"
+                type="button"
+            >
+                Done
+            </button>
+
+        </div>
+
+    </div>
+</div>
 
 
 </body>

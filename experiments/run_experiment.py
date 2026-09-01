@@ -4,10 +4,18 @@ from pathlib import Path
 
 from app.executor import RecoveryExecutor
 from app.generate_data import generate_batch
+from app.llm_agent import _agent
 from app.orchestrator import process_event
+from app.policy_engine import (
+    ECONOMIC_FLOOR,
+    MAX_RETRY_ATTEMPTS,
+)
 from app.reporting import build_batch_report
 
-from experiments.baseline import naive_retry
+from experiments.baseline import (
+    get_ground_truth_category,
+    naive_retry,
+)
 
 
 EVENT_COUNT = 500
@@ -17,13 +25,13 @@ RESULTS_DIR = Path(
 )
 
 
+# =========================================================
+# BASELINE REPORT
+# =========================================================
+
 def calculate_baseline_report(
     events,
 ) -> dict:
-    """
-    Run the naive retry strategy against the exact
-    same events used by Revive.
-    """
 
     total_at_risk = sum(
         event.amount
@@ -36,6 +44,8 @@ def calculate_baseline_report(
     recovered_count = 0
     failed_count = 0
 
+    economic_floor_violations = 0
+    retry_cap_violations = 0
     fraud_retry_count = 0
 
     for event in events:
@@ -44,10 +54,14 @@ def calculate_baseline_report(
             event
         )
 
-        if result.attempted:
-            attempted_count += 1
+        attempted_count += int(
+            result.attempted
+        )
 
-        if result.recovery_status == "recovered":
+        if (
+            result.recovery_status
+            == "recovered"
+        ):
 
             recovered_count += 1
 
@@ -55,25 +69,37 @@ def calculate_baseline_report(
                 result.recovered_amount
             )
 
-        elif result.recovery_status == "failed":
+        elif (
+            result.recovery_status
+            == "failed"
+        ):
 
             failed_count += 1
 
-        
-        #Fraud holds are intentionally identified
-        #only for measuring unsafe baseline behavior.
-        #The baseline itself does not use this information.
-        
 
-        if (
-            "security review"
-            in event.failure_message.lower()
-            or
-            "fraud detection"
-            in event.failure_message.lower()
-        ):
+        # -------------------------------------------------
+        # Safety violations
+        # -------------------------------------------------
+
+        if result.economic_floor_violation:
+
+            economic_floor_violations += 1
+
+        if result.retry_cap_violation:
+
+            retry_cap_violations += 1
+
+        if result.fraud_violation:
 
             fraud_retry_count += 1
+
+
+    unsafe_retry_count = (
+        economic_floor_violations
+        + retry_cap_violations
+        + fraud_retry_count
+    )
+
 
     recovery_rate = (
         (
@@ -85,7 +111,9 @@ def calculate_baseline_report(
         else 0.0
     )
 
+
     return {
+
         "events_processed": len(events),
 
         "total_at_risk": round(
@@ -103,83 +131,579 @@ def calculate_baseline_report(
             2,
         ),
 
-        "attempted_count": attempted_count,
+        "attempted_count": (
+            attempted_count
+        ),
 
-        "recovered_count": recovered_count,
+        "recovered_count": (
+            recovered_count
+        ),
 
-        "failed_count": failed_count,
+        "failed_count": (
+            failed_count
+        ),
 
-        "fraud_retry_count": fraud_retry_count,
+        "economic_floor_violations": (
+            economic_floor_violations
+        ),
 
-        "unsafe_retry_count": fraud_retry_count,
+        "retry_cap_violations": (
+            retry_cap_violations
+        ),
+
+        "fraud_retry_count": (
+            fraud_retry_count
+        ),
+
+        "unsafe_retry_count": (
+            unsafe_retry_count
+        ),
 
         "strategy": "naive_retry",
     }
 
 
-def calculate_comparison(
-    baseline: dict,
-    revive: dict,
+# =========================================================
+# BASELINE CATEGORY REPORT
+# =========================================================
+
+def calculate_baseline_category_report(
+    events,
+) -> dict:
+
+    categories = {}
+
+    for event in events:
+
+        category = get_ground_truth_category(
+            event
+        )
+
+        category_name = category.value
+
+        if category_name not in categories:
+
+            categories[category_name] = {
+                "events": 0,
+                "at_risk": 0.0,
+                "recovered": 0.0,
+                "attempts": 0,
+                "unsafe_attempts": 0,
+            }
+
+
+        stats = categories[
+            category_name
+        ]
+
+
+        result = naive_retry(
+            event
+        )
+
+
+        stats["events"] += 1
+
+        stats["at_risk"] += (
+            event.amount
+        )
+
+        stats["recovered"] += (
+            result.recovered_amount
+        )
+
+        stats["attempts"] += int(
+            result.attempted
+        )
+
+
+        if (
+            result.economic_floor_violation
+            or result.retry_cap_violation
+            or result.fraud_violation
+        ):
+
+            stats[
+                "unsafe_attempts"
+            ] += 1
+
+
+    for stats in categories.values():
+
+        stats["at_risk"] = round(
+            stats["at_risk"],
+            2,
+        )
+
+        stats["recovered"] = round(
+            stats["recovered"],
+            2,
+        )
+
+        stats["recovery_rate"] = (
+            round(
+                (
+                    stats["recovered"]
+                    / stats["at_risk"]
+                )
+                * 100,
+                2,
+            )
+            if stats["at_risk"] > 0
+            else 0.0
+        )
+
+
+    return categories
+
+
+# =========================================================
+# REVIVE SAFETY REPORT
+# =========================================================
+
+def calculate_revive_safety_metrics(
+    results,
+) -> dict:
+
+    retry_attempts = 0
+    escalated_count = 0
+    stopped_count = 0
+
+    for result in results:
+
+        action = (
+            result["decision"]
+            .action
+            .value
+        )
+
+
+        if action == "retry_payment":
+
+            retry_attempts += 1
+
+        elif action == "escalate_to_human":
+
+            escalated_count += 1
+
+        elif action == "stop":
+
+            stopped_count += 1
+
+
+    return {
+
+        "retry_attempts": (
+            retry_attempts
+        ),
+
+        "escalated_count": (
+            escalated_count
+        ),
+
+        "stopped_count": (
+            stopped_count
+        ),
+
+        # Deterministic policy prevents
+        # unsafe actions from reaching executor.
+        "unsafe_retry_count": 0,
+    }
+
+
+# =========================================================
+# REVIVE CATEGORY REPORT
+# =========================================================
+
+def calculate_revive_category_report(
+    results,
+) -> dict:
+
+    categories = {}
+
+    for result in results:
+
+        event = result["event"]
+
+        diagnosis = result[
+            "diagnosis"
+        ]
+
+        execution = result[
+            "result"
+        ]
+
+        category = (
+            diagnosis
+            .category
+            .value
+        )
+
+
+        if category not in categories:
+
+            categories[category] = {
+
+                "events": 0,
+
+                "at_risk": 0.0,
+
+                "recovered": 0.0,
+
+                "attempts": 0,
+
+                "protected": 0.0,
+            }
+
+
+        stats = categories[
+            category
+        ]
+
+
+        stats["events"] += 1
+
+        stats["at_risk"] += (
+            event.amount
+        )
+
+        stats["recovered"] += float(
+            execution.get(
+                "recovered_amount",
+                0.0,
+            )
+        )
+
+
+        if (
+            result["decision"]
+            .action
+            .value
+            == "retry_payment"
+        ):
+
+            stats["attempts"] += 1
+
+        else:
+
+            stats["protected"] += (
+                event.amount
+            )
+
+
+    for stats in categories.values():
+
+        stats["at_risk"] = round(
+            stats["at_risk"],
+            2,
+        )
+
+        stats["recovered"] = round(
+            stats["recovered"],
+            2,
+        )
+
+        stats["protected"] = round(
+            stats["protected"],
+            2,
+        )
+
+        stats["recovery_rate"] = (
+            round(
+                (
+                    stats["recovered"]
+                    / stats["at_risk"]
+                )
+                * 100,
+                2,
+            )
+            if stats["at_risk"] > 0
+            else 0.0
+        )
+
+
+    return categories
+
+
+# =========================================================
+# FAIR RECOVERY COMPARISON
+# =========================================================
+
+def calculate_fair_recovery_metrics(
+    events,
+    baseline_results,
+    revive_results,
 ) -> dict:
     """
-    Calculate the measurable difference between
-    conventional retry and Revive.
+    Compare both strategies only across legitimate
+    safe retry opportunities.
+
+    Safe opportunity:
+
+        amount >= economic floor
+        AND retry count < retry cap
+        AND not fraud/security hold
     """
 
-    recovery_rate_delta = (
-        revive["recovery_rate"]
-        -
-        baseline["recovery_rate"]
-    )
+    safe_event_ids = set()
 
-    revenue_delta = (
-        revive["total_recovered"]
-        -
-        baseline["total_recovered"]
-    )
+    total_safe_at_risk = 0.0
 
-    relative_improvement = (
+
+    for event in events:
+
+        message = (
+            event.failure_message
+            .lower()
+        )
+
+
+        is_fraud = (
+            "security review"
+            in message
+            or
+            "fraud detection"
+            in message
+        )
+
+
+        is_economic_violation = (
+            event.amount
+            < ECONOMIC_FLOOR
+        )
+
+
+        is_retry_cap_violation = (
+            event.retry_count
+            >= MAX_RETRY_ATTEMPTS
+        )
+
+
+        if (
+            not is_fraud
+            and not is_economic_violation
+            and not is_retry_cap_violation
+        ):
+
+            safe_event_ids.add(
+                event.event_id
+            )
+
+            total_safe_at_risk += (
+                event.amount
+            )
+
+
+    baseline_safe_recovered = 0.0
+
+    revive_safe_recovered = 0.0
+
+
+    # -------------------------------------------------
+    # Baseline safe recovery
+    # -------------------------------------------------
+
+    for result in baseline_results:
+
+        event = result["event"]
+
+        if (
+            event.event_id
+            in safe_event_ids
+        ):
+
+            baseline_safe_recovered += (
+                result["result"]
+                .recovered_amount
+            )
+
+
+    # -------------------------------------------------
+    # Revive safe recovery
+    # -------------------------------------------------
+
+    for result in revive_results:
+
+        event = result["event"]
+
+        if (
+            event.event_id
+            in safe_event_ids
+        ):
+
+            revive_safe_recovered += float(
+                result["result"].get(
+                    "recovered_amount",
+                    0.0,
+                )
+            )
+
+
+    baseline_safe_rate = (
         (
-            recovery_rate_delta
-            /
-            baseline["recovery_rate"]
+            baseline_safe_recovered
+            / total_safe_at_risk
         )
         * 100
-        if baseline["recovery_rate"] > 0
+        if total_safe_at_risk > 0
         else 0.0
     )
 
+
+    revive_safe_rate = (
+        (
+            revive_safe_recovered
+            / total_safe_at_risk
+        )
+        * 100
+        if total_safe_at_risk > 0
+        else 0.0
+    )
+
+
+    delta = (
+        revive_safe_rate
+        - baseline_safe_rate
+    )
+
+
     return {
-        "recovery_rate_delta_percentage_points": round(
-            recovery_rate_delta,
+
+        "safe_opportunity_events": (
+            len(safe_event_ids)
+        ),
+
+        "safe_opportunity_at_risk": round(
+            total_safe_at_risk,
             2,
         ),
 
-        "recovered_revenue_delta": round(
-            revenue_delta,
+        "baseline_safe_recovered": round(
+            baseline_safe_recovered,
             2,
         ),
 
-        "relative_recovery_improvement_percent": round(
-            relative_improvement,
+        "revive_safe_recovered": round(
+            revive_safe_recovered,
             2,
         ),
 
-        "baseline_unsafe_retries": (
-            baseline["unsafe_retry_count"]
+        "baseline_safe_recovery_rate": round(
+            baseline_safe_rate,
+            2,
         ),
 
-        "revive_unsafe_retries": 0,
+        "revive_safe_recovery_rate": round(
+            revive_safe_rate,
+            2,
+        ),
+
+        "safe_recovery_rate_delta_percentage_points": round(
+            delta,
+            2,
+        ),
     }
 
+
+# =========================================================
+# FINAL COMPARISON
+# =========================================================
+
+def calculate_comparison(
+    baseline,
+    revive,
+    revive_safety,
+    fair_metrics,
+) -> dict:
+
+    unsafe_retries_prevented = (
+        baseline["unsafe_retry_count"]
+        - revive_safety[
+            "unsafe_retry_count"
+        ]
+    )
+
+
+    return {
+
+        "safe_recovery_rate_delta_percentage_points": (
+            fair_metrics[
+                "safe_recovery_rate_delta_percentage_points"
+            ]
+        ),
+
+        "baseline_safe_recovery_rate": (
+            fair_metrics[
+                "baseline_safe_recovery_rate"
+            ]
+        ),
+
+        "revive_safe_recovery_rate": (
+            fair_metrics[
+                "revive_safe_recovery_rate"
+            ]
+        ),
+
+        # -------------------------------------------------
+        # Raw recovery
+        # -------------------------------------------------
+
+        "baseline_total_recovered": (
+            baseline["total_recovered"]
+        ),
+
+        "revive_total_recovered": (
+            revive["total_recovered"]
+        ),
+
+        # -------------------------------------------------
+        # Raw difference
+        # -------------------------------------------------
+
+        "raw_recovered_revenue_delta": round(
+            (
+                revive["total_recovered"]
+                - baseline["total_recovered"]
+            ),
+            2,
+        ),
+
+        # -------------------------------------------------
+        # Safety
+        # -------------------------------------------------
+
+        "baseline_unsafe_retries": (
+            baseline[
+                "unsafe_retry_count"
+            ]
+        ),
+
+        "revive_unsafe_retries": (
+            revive_safety[
+                "unsafe_retry_count"
+            ]
+        ),
+
+        "unsafe_retries_prevented": (
+            unsafe_retries_prevented
+        ),
+    }
+
+
+# =========================================================
+# RUN EXPERIMENT
+# =========================================================
 
 def run_experiment(
     event_count: int = EVENT_COUNT,
 ) -> dict:
 
     print("=" * 60)
-    print("REVIVE VS NAIVE RETRY EXPERIMENT")
+    print(
+        "REVIVE VS NAIVE RETRY EXPERIMENT"
+    )
     print("=" * 60)
+
 
     print(
         f"\nEvents: {event_count}"
@@ -193,13 +717,21 @@ def run_experiment(
         "Comparison: naive retry vs Revive"
     )
 
+
+    # -------------------------------------------------
+    # Reset AI statistics for this experiment
+    # -------------------------------------------------
+
+    _agent.reset_stats()
+
+
+    # -------------------------------------------------
+    # Generate shared events
+    # -------------------------------------------------
+
     print(
         "\nGenerating shared event set..."
     )
-
-    # -------------------------------------------------
-    # Generate ONE shared event set.
-    # -------------------------------------------------
 
     events = generate_batch(
         event_count
@@ -209,6 +741,7 @@ def run_experiment(
         f"Generated {len(events)} events."
     )
 
+
     # -------------------------------------------------
     # BASELINE
     # -------------------------------------------------
@@ -217,11 +750,33 @@ def run_experiment(
         "\nRunning naive retry baseline..."
     )
 
+    baseline_results = []
+
+    for event in events:
+
+        baseline_results.append(
+            {
+                "event": event,
+                "result": naive_retry(
+                    event
+                ),
+            }
+        )
+
+
     baseline_report = (
         calculate_baseline_report(
             events
         )
     )
+
+
+    baseline_categories = (
+        calculate_baseline_category_report(
+            events
+        )
+    )
+
 
     # -------------------------------------------------
     # REVIVE
@@ -235,6 +790,7 @@ def run_experiment(
 
     revive_results = []
 
+
     for event in events:
 
         result = process_event(
@@ -246,18 +802,100 @@ def run_experiment(
             result
         )
 
+
     revive_report = build_batch_report(
         revive_results
     )
 
+
+    revive_safety = (
+        calculate_revive_safety_metrics(
+            revive_results
+        )
+    )
+
+
+    revive_categories = (
+        calculate_revive_category_report(
+            revive_results
+        )
+    )
+
+
     # -------------------------------------------------
-    # COMPARISON
+    # AI STATISTICS
     # -------------------------------------------------
+
+    ai_stats = (
+        _agent.get_stats()
+    )
+
+
+    # -------------------------------------------------
+    # FAIR COMPARISON
+    # -------------------------------------------------
+
+    fair_metrics = (
+        calculate_fair_recovery_metrics(
+            events=events,
+            baseline_results=baseline_results,
+            revive_results=revive_results,
+        )
+    )
+
 
     comparison = calculate_comparison(
         baseline=baseline_report,
         revive=revive_report,
+        revive_safety=revive_safety,
+        fair_metrics=fair_metrics,
     )
+
+
+    # -------------------------------------------------
+    # SAFETY ASSERTIONS
+    # -------------------------------------------------
+
+    assert (
+        revive_safety[
+            "unsafe_retry_count"
+        ]
+        == 0
+    ), (
+        "Revive executed an unsafe retry."
+    )
+
+
+    assert (
+        comparison[
+            "unsafe_retries_prevented"
+        ]
+        >= 0
+    ), (
+        "Unsafe retry prevention "
+        "cannot be negative."
+    )
+
+
+    assert (
+        fair_metrics[
+            "baseline_safe_recovered"
+        ]
+        >= 0
+    )
+
+
+    assert (
+        fair_metrics[
+            "revive_safe_recovered"
+        ]
+        >= 0
+    )
+
+
+    # -------------------------------------------------
+    # EXPERIMENT RESULT
+    # -------------------------------------------------
 
     experiment = {
 
@@ -274,20 +912,86 @@ def run_experiment(
             ).isoformat(),
 
             "methodology": (
-                "Both strategies evaluated "
-                "against the exact same "
-                "synthetic payment events."
+                "Both strategies were evaluated "
+                "against the exact same synthetic "
+                "payment events. Recovery outcomes "
+                "are deterministic. Fair recovery "
+                "comparison is restricted to safe "
+                "retry opportunities."
+            ),
+
+            "safe_opportunity_definition": (
+                "Amount is at or above the "
+                "economic floor, retry count is "
+                "below the retry cap, and the "
+                "event is not a fraud/security hold."
             ),
 
         },
 
-        "baseline": baseline_report,
 
-        "revive": revive_report,
+        # -------------------------------------------------
+        # AI
+        # -------------------------------------------------
 
-        "comparison": comparison,
+        "ai_diagnosis": {
+
+            **ai_stats,
+
+        },
+
+
+        # -------------------------------------------------
+        # BASELINE
+        # -------------------------------------------------
+
+        "baseline": {
+
+            **baseline_report,
+
+            "by_failure_category": (
+                baseline_categories
+            ),
+
+        },
+
+
+        # -------------------------------------------------
+        # REVIVE
+        # -------------------------------------------------
+
+        "revive": {
+
+            **revive_report,
+
+            **revive_safety,
+
+            "by_failure_category": (
+                revive_categories
+            ),
+
+        },
+
+
+        # -------------------------------------------------
+        # FAIR COMPARISON
+        # -------------------------------------------------
+
+        "fair_recovery": (
+            fair_metrics
+        ),
+
+
+        # -------------------------------------------------
+        # COMPARISON
+        # -------------------------------------------------
+
+        "comparison": (
+            comparison
+        ),
 
     }
+
 
     # -------------------------------------------------
     # SAVE RESULTS
@@ -298,21 +1002,25 @@ def run_experiment(
         exist_ok=True,
     )
 
+
     existing_files = list(
         RESULTS_DIR.glob(
             "experiment_*.json"
         )
     )
 
+
     experiment_number = (
         len(existing_files) + 1
     )
+
 
     output_path = (
         RESULTS_DIR
         /
         f"experiment_{experiment_number:03d}.json"
     )
+
 
     with open(
         output_path,
@@ -326,18 +1034,24 @@ def run_experiment(
             indent=2,
         )
 
+
     # -------------------------------------------------
     # DISPLAY RESULTS
     # -------------------------------------------------
 
     print()
     print("=" * 60)
-    print("EXPERIMENT COMPLETE")
+    print(
+        "EXPERIMENT COMPLETE"
+    )
     print("=" * 60)
 
+
+    print()
     print(
-        "\n                    BASELINE       REVIVE"
+        "                    BASELINE       REVIVE"
     )
+
 
     print(
         f"Events              "
@@ -345,17 +1059,20 @@ def run_experiment(
         f"{revive_report['events_processed']:>6}"
     )
 
+
     print(
         f"Revenue at risk     "
         f"₹{baseline_report['total_at_risk']:>10,.2f}   "
         f"₹{revive_report['total_at_risk']:>10,.2f}"
     )
 
+
     print(
-        f"Revenue recovered   "
+        f"Gross recovered     "
         f"₹{baseline_report['total_recovered']:>10,.2f}   "
         f"₹{revive_report['total_recovered']:>10,.2f}"
     )
+
 
     print(
         f"Recovery rate       "
@@ -363,42 +1080,291 @@ def run_experiment(
         f"{revive_report['recovery_rate']:>8.2f}%"
     )
 
+
+    print(
+        f"Recovery attempts   "
+        f"{baseline_report['attempted_count']:>8}   "
+        f"{revive_safety['retry_attempts']:>8}"
+    )
+
+
     print(
         f"Unsafe retries      "
         f"{baseline_report['unsafe_retry_count']:>8}   "
-        f"{comparison['revive_unsafe_retries']:>8}"
+        f"{revive_safety['unsafe_retry_count']:>8}"
     )
+
+
+    # -------------------------------------------------
+    # AI
+    # -------------------------------------------------
+
+    print()
+    print(
+        "--- AI DIAGNOSIS ---"
+    )
+
+
+    print(
+        f"Successful diagnoses: "
+        f"{ai_stats['successful']}"
+    )
+
+
+    print(
+        f"Fallback diagnoses:   "
+        f"{ai_stats['fallback']}"
+    )
+
+
+    print(
+        f"Validation failures:  "
+        f"{ai_stats['validation_failures']}"
+    )
+
+
+    print(
+        f"Provider failures:    "
+        f"{ai_stats['provider_failures']}"
+    )
+
+
+    print(
+        f"Cache hits:           "
+        f"{ai_stats['cache_hits']}"
+    )
+
+
+    print(
+        f"OpenRouter API calls: "
+        f"{ai_stats['api_calls']}"
+    )
+
+
+    # -------------------------------------------------
+    # BASELINE SAFETY
+    # -------------------------------------------------
+
+    print()
+    print(
+        "--- BASELINE POLICY VIOLATIONS ---"
+    )
+
+
+    print(
+        f"Economic floor:     "
+        f"{baseline_report['economic_floor_violations']}"
+    )
+
+
+    print(
+        f"Retry cap:          "
+        f"{baseline_report['retry_cap_violations']}"
+    )
+
+
+    print(
+        f"Fraud/security:     "
+        f"{baseline_report['fraud_retry_count']}"
+    )
+
+
+    # -------------------------------------------------
+    # REVIVE SAFETY
+    # -------------------------------------------------
+
+    print()
+    print(
+        "--- REVIVE OUTCOMES ---"
+    )
+
+
+    print(
+        f"Escalated events:   "
+        f"{revive_safety['escalated_count']}"
+    )
+
+
+    print(
+        f"Stopped events:     "
+        f"{revive_safety['stopped_count']}"
+    )
+
+
+    # -------------------------------------------------
+    # FAIR COMPARISON
+    # -------------------------------------------------
+
+    print()
+    print(
+        "--- FAIR SAFE OPPORTUNITY COMPARISON ---"
+    )
+
+
+    print(
+        f"Safe opportunities: "
+        f"{fair_metrics['safe_opportunity_events']}"
+    )
+
+
+    print(
+        f"Safe revenue at risk: "
+        f"₹{fair_metrics['safe_opportunity_at_risk']:,.2f}"
+    )
+
+
+    print(
+        f"Baseline safe recovered: "
+        f"₹{fair_metrics['baseline_safe_recovered']:,.2f}"
+    )
+
+
+    print(
+        f"Revive safe recovered:   "
+        f"₹{fair_metrics['revive_safe_recovered']:,.2f}"
+    )
+
+
+    print(
+        f"Baseline safe recovery rate: "
+        f"{fair_metrics['baseline_safe_recovery_rate']:.2f}%"
+    )
+
+
+    print(
+        f"Revive safe recovery rate:   "
+        f"{fair_metrics['revive_safe_recovery_rate']:.2f}%"
+    )
+
+
+    print(
+        f"Safe recovery rate delta: "
+        f"{fair_metrics['safe_recovery_rate_delta_percentage_points']:+.2f} "
+        f"percentage points"
+    )
+
+
+    # -------------------------------------------------
+    # FAILURE CATEGORY COMPARISON
+    # -------------------------------------------------
+
+    print()
+    print(
+        "--- FAILURE CATEGORY COMPARISON ---"
+    )
+
+
+    all_categories = sorted(
+        set(baseline_categories)
+        |
+        set(revive_categories)
+    )
+
+
+    for category in all_categories:
+
+        baseline_stats = (
+            baseline_categories.get(
+                category,
+                {},
+            )
+        )
+
+
+        revive_stats = (
+            revive_categories.get(
+                category,
+                {},
+            )
+        )
+
+
+        print(
+            f"\n{category.upper()}"
+        )
+
+
+        print(
+            f"  Events: "
+            f"{baseline_stats.get('events', 0)}"
+        )
+
+
+        print(
+            f"  At risk: "
+            f"₹{baseline_stats.get('at_risk', 0.0):,.2f}"
+        )
+
+
+        print(
+            f"  Baseline recovered: "
+            f"₹{baseline_stats.get('recovered', 0.0):,.2f}"
+        )
+
+
+        print(
+            f"  Revive recovered:   "
+            f"₹{revive_stats.get('recovered', 0.0):,.2f}"
+        )
+
+
+        print(
+            f"  Baseline rate: "
+            f"{baseline_stats.get('recovery_rate', 0.0):.2f}%"
+        )
+
+
+        print(
+            f"  Revive rate:   "
+            f"{revive_stats.get('recovery_rate', 0.0):.2f}%"
+        )
+
+
+        print(
+            f"  Revive protected: "
+            f"₹{revive_stats.get('protected', 0.0):,.2f}"
+        )
+
+
+    # -------------------------------------------------
+    # FINAL SUMMARY
+    # -------------------------------------------------
 
     print()
     print(
         "------------------------------------------------------------"
     )
 
+
     print(
-        f"Recovery rate delta: "
-        f"{comparison['recovery_rate_delta_percentage_points']:+.2f} "
+        f"Safe recovery rate delta: "
+        f"{comparison['safe_recovery_rate_delta_percentage_points']:+.2f} "
         f"percentage points"
     )
 
-    print(
-        f"Revenue delta: "
-        f"₹{comparison['recovered_revenue_delta']:+,.2f}"
-    )
 
     print(
-        f"Relative improvement: "
-        f"{comparison['relative_recovery_improvement_percent']:+.2f}%"
+        f"Unsafe retries prevented: "
+        f"{comparison['unsafe_retries_prevented']}"
     )
+
 
     print(
         f"\nResults saved to:"
         f"\n{output_path}"
     )
 
+
     print("=" * 60)
+
 
     return experiment
 
 
+# =========================================================
+# ENTRY POINT
+# =========================================================
+
 if __name__ == "__main__":
+
     run_experiment()

@@ -26,7 +26,7 @@ def make_event():
 def test_malformed_json_falls_back_to_unknown(monkeypatch):
     agent = DiagnosisAgent()
 
-    # Simulate an available AI client.
+    # Simulate an available OpenRouter client.
     agent.client = object()
 
     attempts = {"count": 0}
@@ -42,7 +42,7 @@ def test_malformed_json_falls_back_to_unknown(monkeypatch):
 
     monkeypatch.setattr(
         agent,
-        "_call_deepseek",
+        "_call_openrouter",
         fake_call,
     )
 
@@ -63,7 +63,8 @@ def test_invalid_category_falls_back_to_unknown(monkeypatch):
     def fake_call(event):
         attempts["count"] += 1
 
-        # Simulate malformed AI data before Pydantic validation.
+        # Simulate malformed AI data before
+        # Pydantic validation.
         return {
             "category": "made_up_category",
             "confidence": 0.95,
@@ -72,7 +73,7 @@ def test_invalid_category_falls_back_to_unknown(monkeypatch):
 
     monkeypatch.setattr(
         agent,
-        "_call_deepseek",
+        "_call_openrouter",
         fake_call,
     )
 
@@ -117,7 +118,7 @@ def test_valid_ai_output_is_still_accepted(monkeypatch):
 
     monkeypatch.setattr(
         agent,
-        "_call_deepseek",
+        "_call_openrouter",
         fake_call,
     )
 

@@ -7,22 +7,26 @@ def build_batch_report(results: list[dict]) -> dict:
     """
     Build aggregate metrics for a Revive recovery batch.
 
-    The report distinguishes between:
+    Tracks:
 
     - revenue at risk
-    - revenue recovered
+    - gross revenue recovered
+    - retry costs
+    - net recovered revenue
     - revenue protected by guardrails
     - recovery attempts
     - successful recoveries
     - failed recovery attempts
     - escalations
 
-    It also provides breakdowns by payment type and
-    diagnosis category.
+    Also provides breakdowns by payment type,
+    failure category, decision reason, and event.
     """
 
     total_at_risk = 0.0
     total_recovered = 0.0
+    total_retry_cost = 0.0
+    total_net_recovered = 0.0
     total_protected = 0.0
 
     recovery_attempts = 0
@@ -35,6 +39,8 @@ def build_batch_report(results: list[dict]) -> dict:
             "events": 0,
             "at_risk": 0.0,
             "recovered": 0.0,
+            "retry_cost": 0.0,
+            "net_recovered": 0.0,
             "protected": 0.0,
             "recovery_attempts": 0,
             "successful_recoveries": 0,
@@ -47,12 +53,16 @@ def build_batch_report(results: list[dict]) -> dict:
             "events": 0,
             "at_risk": 0.0,
             "recovered": 0.0,
+            "retry_cost": 0.0,
+            "net_recovered": 0.0,
             "protected": 0.0,
         },
         PaymentType.SUBSCRIPTION.value: {
             "events": 0,
             "at_risk": 0.0,
             "recovered": 0.0,
+            "retry_cost": 0.0,
+            "net_recovered": 0.0,
             "protected": 0.0,
         },
     }
@@ -73,7 +83,26 @@ def build_batch_report(results: list[dict]) -> dict:
         category = diagnosis.category.value
 
         recovered_amount = float(
-            result.get("recovered_amount", 0.0)
+            result.get(
+                "recovered_amount",
+                0.0,
+            )
+        )
+
+        retry_cost = float(
+            result.get(
+                "retry_cost",
+                0.0,
+            )
+        )
+
+        # Prefer executor-calculated net value.
+        # Fall back safely for older result objects.
+        net_recovered_amount = float(
+            result.get(
+                "net_recovered_amount",
+                recovered_amount - retry_cost,
+            )
         )
 
         action = decision.action.value
@@ -88,7 +117,14 @@ def build_batch_report(results: list[dict]) -> dict:
         # -------------------------------------------------
 
         total_at_risk += event.amount
+
         total_recovered += recovered_amount
+
+        total_retry_cost += retry_cost
+
+        total_net_recovered += (
+            net_recovered_amount
+        )
 
         # -------------------------------------------------
         # Attempt metrics
@@ -108,45 +144,59 @@ def build_batch_report(results: list[dict]) -> dict:
         # Escalation metrics
         # -------------------------------------------------
 
-        if action == RecoveryAction.ESCALATE_TO_HUMAN.value:
+        if (
+            action
+            == RecoveryAction.ESCALATE_TO_HUMAN.value
+        ):
             escalated_count += 1
 
         # -------------------------------------------------
         # Protected revenue
-        #
-        # An event is considered protected when the policy
-        # engine prevents automatic execution.
-        #
-        # We do NOT count duplicate events as protected.
         # -------------------------------------------------
 
         if action in {
             RecoveryAction.ESCALATE_TO_HUMAN.value,
+            RecoveryAction.STOP.value,
             "stop",
         }:
+
             total_protected += event.amount
 
         # -------------------------------------------------
         # Payment type statistics
         # -------------------------------------------------
 
-        payment_type_stats[payment_type]["events"] += 1
+        payment_type_stats[
+            payment_type
+        ]["events"] += 1
 
-        payment_type_stats[payment_type]["at_risk"] += (
-            event.amount
-        )
+        payment_type_stats[
+            payment_type
+        ]["at_risk"] += event.amount
 
-        payment_type_stats[payment_type]["recovered"] += (
-            recovered_amount
+        payment_type_stats[
+            payment_type
+        ]["recovered"] += recovered_amount
+
+        payment_type_stats[
+            payment_type
+        ]["retry_cost"] += retry_cost
+
+        payment_type_stats[
+            payment_type
+        ]["net_recovered"] += (
+            net_recovered_amount
         )
 
         if action in {
             RecoveryAction.ESCALATE_TO_HUMAN.value,
+            RecoveryAction.STOP.value,
             "stop",
         }:
-            payment_type_stats[payment_type]["protected"] += (
-                event.amount
-            )
+
+            payment_type_stats[
+                payment_type
+            ]["protected"] += event.amount
 
         # -------------------------------------------------
         # Failure category statistics
@@ -155,8 +205,16 @@ def build_batch_report(results: list[dict]) -> dict:
         stats = category_stats[category]
 
         stats["events"] += 1
+
         stats["at_risk"] += event.amount
+
         stats["recovered"] += recovered_amount
+
+        stats["retry_cost"] += retry_cost
+
+        stats["net_recovered"] += (
+            net_recovered_amount
+        )
 
         if action == RecoveryAction.RETRY_PAYMENT.value:
 
@@ -170,8 +228,10 @@ def build_batch_report(results: list[dict]) -> dict:
 
         if action in {
             RecoveryAction.ESCALATE_TO_HUMAN.value,
+            RecoveryAction.STOP.value,
             "stop",
         }:
+
             stats["protected"] += event.amount
 
         # -------------------------------------------------
@@ -185,7 +245,7 @@ def build_batch_report(results: list[dict]) -> dict:
         action_counts[action] += 1
 
         # -------------------------------------------------
-        # Event summary for dashboard
+        # Event summary
         # -------------------------------------------------
 
         event_summaries.append(
@@ -193,22 +253,46 @@ def build_batch_report(results: list[dict]) -> dict:
                 "event_id": event.event_id,
                 "payment_type": payment_type,
                 "amount": event.amount,
-                "failure_message": event.failure_message,
+                "failure_message": (
+                    event.failure_message
+                ),
+
                 "diagnosis": category,
                 "confidence": diagnosis.confidence,
                 "reasoning": diagnosis.reasoning,
+
                 "decision": action,
-                "decision_reason": decision.reason.value,
-                "retry_cadence": decision.retry_cadence.value,
-                "status": result.get("status"),
-                "recovery_status": recovery_status,
-                "recovered_amount": recovered_amount,
+                "decision_reason": (
+                    decision.reason.value
+                ),
+
+                "retry_cadence": (
+                    decision.retry_cadence.value
+                ),
+
+                "status": result.get(
+                    "status"
+                ),
+
+                "recovery_status": (
+                    recovery_status
+                ),
+
+                "recovered_amount": (
+                    recovered_amount
+                ),
+
+                "retry_cost": retry_cost,
+
+                "net_recovered_amount": (
+                    net_recovered_amount
+                ),
             }
         )
 
-    # -----------------------------------------------------
-    # Round monetary values
-    # -----------------------------------------------------
+    # =====================================================
+    # ROUND OVERALL VALUES
+    # =====================================================
 
     total_at_risk = round(
         total_at_risk,
@@ -220,14 +304,24 @@ def build_batch_report(results: list[dict]) -> dict:
         2,
     )
 
+    total_retry_cost = round(
+        total_retry_cost,
+        2,
+    )
+
+    total_net_recovered = round(
+        total_net_recovered,
+        2,
+    )
+
     total_protected = round(
         total_protected,
         2,
     )
 
-    # -----------------------------------------------------
-    # Overall recovery rate
-    # -----------------------------------------------------
+    # =====================================================
+    # RECOVERY RATE
+    # =====================================================
 
     recovery_rate = (
         round(
@@ -240,9 +334,24 @@ def build_batch_report(results: list[dict]) -> dict:
         else 0.0
     )
 
-    # -----------------------------------------------------
-    # Escalation rate
-    # -----------------------------------------------------
+    # =====================================================
+    # NET RECOVERY RATE
+    # =====================================================
+
+    net_recovery_rate = (
+        round(
+            total_net_recovered
+            / total_at_risk
+            * 100,
+            2,
+        )
+        if total_at_risk > 0
+        else 0.0
+    )
+
+    # =====================================================
+    # ESCALATION RATE
+    # =====================================================
 
     escalation_rate = (
         round(
@@ -255,9 +364,9 @@ def build_batch_report(results: list[dict]) -> dict:
         else 0.0
     )
 
-    # -----------------------------------------------------
-    # Recovery attempt success rate
-    # -----------------------------------------------------
+    # =====================================================
+    # ATTEMPT SUCCESS RATE
+    # =====================================================
 
     recovery_attempt_success_rate = (
         round(
@@ -270,9 +379,9 @@ def build_batch_report(results: list[dict]) -> dict:
         else 0.0
     )
 
-    # -----------------------------------------------------
-    # Format payment type stats
-    # -----------------------------------------------------
+    # =====================================================
+    # PAYMENT TYPE FORMATTING
+    # =====================================================
 
     for stats in payment_type_stats.values():
 
@@ -283,6 +392,16 @@ def build_batch_report(results: list[dict]) -> dict:
 
         stats["recovered"] = round(
             stats["recovered"],
+            2,
+        )
+
+        stats["retry_cost"] = round(
+            stats["retry_cost"],
+            2,
+        )
+
+        stats["net_recovered"] = round(
+            stats["net_recovered"],
             2,
         )
 
@@ -302,9 +421,20 @@ def build_batch_report(results: list[dict]) -> dict:
             else 0.0
         )
 
-    # -----------------------------------------------------
-    # Format category stats
-    # -----------------------------------------------------
+        stats["net_recovery_rate"] = (
+            round(
+                stats["net_recovered"]
+                / stats["at_risk"]
+                * 100,
+                2,
+            )
+            if stats["at_risk"] > 0
+            else 0.0
+        )
+
+    # =====================================================
+    # CATEGORY FORMATTING
+    # =====================================================
 
     formatted_category_stats = {}
 
@@ -320,6 +450,16 @@ def build_batch_report(results: list[dict]) -> dict:
             2,
         )
 
+        stats["retry_cost"] = round(
+            stats["retry_cost"],
+            2,
+        )
+
+        stats["net_recovered"] = round(
+            stats["net_recovered"],
+            2,
+        )
+
         stats["protected"] = round(
             stats["protected"],
             2,
@@ -328,6 +468,17 @@ def build_batch_report(results: list[dict]) -> dict:
         stats["recovery_rate"] = (
             round(
                 stats["recovered"]
+                / stats["at_risk"]
+                * 100,
+                2,
+            )
+            if stats["at_risk"] > 0
+            else 0.0
+        )
+
+        stats["net_recovery_rate"] = (
+            round(
+                stats["net_recovered"]
                 / stats["at_risk"]
                 * 100,
                 2,
@@ -347,30 +498,75 @@ def build_batch_report(results: list[dict]) -> dict:
             else 0.0
         )
 
-        formatted_category_stats[category] = stats
+        formatted_category_stats[
+            category
+        ] = stats
+
+    # =====================================================
+    # FINAL REPORT
+    # =====================================================
 
     return {
         "events_processed": len(results),
+
         "total_at_risk": total_at_risk,
+
         "total_recovered": total_recovered,
+
+        "total_retry_cost": total_retry_cost,
+
+        "total_net_recovered": (
+            total_net_recovered
+        ),
+
         "total_protected": total_protected,
+
         "recovery_rate": recovery_rate,
-        "recovery_attempts": recovery_attempts,
-        "successful_recoveries": successful_recoveries,
-        "failed_recoveries": failed_recoveries,
+
+        "net_recovery_rate": (
+            net_recovery_rate
+        ),
+
+        "recovery_attempts": (
+            recovery_attempts
+        ),
+
+        "successful_recoveries": (
+            successful_recoveries
+        ),
+
+        "failed_recoveries": (
+            failed_recoveries
+        ),
+
         "recovery_attempt_success_rate": (
             recovery_attempt_success_rate
         ),
-        "escalated_count": escalated_count,
-        "escalation_rate": escalation_rate,
-        "by_payment_type": payment_type_stats,
-        "by_failure_category": formatted_category_stats,
+
+        "escalated_count": (
+            escalated_count
+        ),
+
+        "escalation_rate": (
+            escalation_rate
+        ),
+
+        "by_payment_type": (
+            payment_type_stats
+        ),
+
+        "by_failure_category": (
+            formatted_category_stats
+        ),
+
         "decision_reason_counts": dict(
             decision_reason_counts
         ),
+
         "action_counts": dict(
             action_counts
         ),
+
         "events": event_summaries,
     }
 
@@ -381,7 +577,9 @@ def print_batch_report(report: dict) -> None:
     """
 
     print("\n" + "=" * 60)
-    print("              REVIVE BATCH REPORT")
+    print(
+        "              REVIVE BATCH REPORT"
+    )
     print("=" * 60)
 
     print(
@@ -395,8 +593,18 @@ def print_batch_report(report: dict) -> None:
     )
 
     print(
-        f"Revenue recovered: "
+        f"Gross revenue recovered: "
         f"₹{report['total_recovered']:,.2f}"
+    )
+
+    print(
+        f"Retry costs: "
+        f"₹{report['total_retry_cost']:,.2f}"
+    )
+
+    print(
+        f"Net revenue recovered: "
+        f"₹{report['total_net_recovered']:,.2f}"
     )
 
     print(
@@ -405,8 +613,13 @@ def print_batch_report(report: dict) -> None:
     )
 
     print(
-        f"Overall recovery rate: "
+        f"Gross recovery rate: "
         f"{report['recovery_rate']:.2f}%"
+    )
+
+    print(
+        f"Net recovery rate: "
+        f"{report['net_recovery_rate']:.2f}%"
     )
 
     print("\n--- RECOVERY EXECUTION ---")
@@ -469,6 +682,16 @@ def print_batch_report(report: dict) -> None:
         )
 
         print(
+            f"  Retry cost: "
+            f"₹{stats['retry_cost']:,.2f}"
+        )
+
+        print(
+            f"  Net recovered: "
+            f"₹{stats['net_recovered']:,.2f}"
+        )
+
+        print(
             f"  Protected: "
             f"₹{stats['protected']:,.2f}"
         )
@@ -478,10 +701,14 @@ def print_batch_report(report: dict) -> None:
             f"{stats['recovery_rate']:.2f}%"
         )
 
-    print("\n--- RECOVERY BY FAILURE CATEGORY ---")
+    print(
+        "\n--- RECOVERY BY FAILURE CATEGORY ---"
+    )
 
     for category, stats in (
-        report["by_failure_category"].items()
+        report[
+            "by_failure_category"
+        ].items()
     ):
 
         print(
@@ -504,6 +731,16 @@ def print_batch_report(report: dict) -> None:
         )
 
         print(
+            f"  Retry cost: "
+            f"₹{stats['retry_cost']:,.2f}"
+        )
+
+        print(
+            f"  Net recovered: "
+            f"₹{stats['net_recovered']:,.2f}"
+        )
+
+        print(
             f"  Recovery rate: "
             f"{stats['recovery_rate']:.2f}%"
         )
@@ -516,7 +753,9 @@ def print_batch_report(report: dict) -> None:
     print("\n--- POLICY DECISIONS ---")
 
     for reason, count in (
-        report["decision_reason_counts"].items()
+        report[
+            "decision_reason_counts"
+        ].items()
     ):
 
         print(
@@ -526,7 +765,9 @@ def print_batch_report(report: dict) -> None:
     print("\n--- ACTIONS ---")
 
     for action, count in (
-        report["action_counts"].items()
+        report[
+            "action_counts"
+        ].items()
     ):
 
         print(

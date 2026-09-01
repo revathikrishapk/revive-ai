@@ -21,6 +21,10 @@ class RecoveryExecutor:
         "mandate_failure": 0.60,
     }
 
+    # Synthetic processing cost for one retry attempt.
+    # This is NOT a real payment-provider fee.
+    RETRY_COST = 2.0
+
     def __init__(self):
         self.executed_event_ids: set[str] = set()
 
@@ -49,6 +53,8 @@ class RecoveryExecutor:
                 "execution_status": "not_executed",
                 "recovery_status": "not_attempted",
                 "recovered_amount": 0.0,
+                "retry_cost": 0.0,
+                "net_recovered_amount": 0.0,
             }
 
         # -------------------------------------------------
@@ -63,13 +69,17 @@ class RecoveryExecutor:
                 "execution_status": "not_executed",
                 "recovery_status": "not_attempted",
                 "recovered_amount": 0.0,
+                "retry_cost": 0.0,
+                "net_recovered_amount": 0.0,
             }
 
         # -------------------------------------------------
         # 3. Mark event as executed
         # -------------------------------------------------
 
-        self.executed_event_ids.add(event.event_id)
+        self.executed_event_ids.add(
+            event.event_id
+        )
 
         # -------------------------------------------------
         # 4. Determine synthetic recovery probability
@@ -81,35 +91,76 @@ class RecoveryExecutor:
         )
 
         # -------------------------------------------------
-        # 5. Generate deterministic outcome
+        # 5. Retry has a synthetic processing cost
+        # -------------------------------------------------
+
+        retry_cost = self.RETRY_COST
+
+        # -------------------------------------------------
+        # 6. Generate deterministic outcome
         # -------------------------------------------------
 
         digest = hashlib.sha256(
             event.event_id.encode("utf-8")
         ).hexdigest()
 
-        bucket = int(digest[:8], 16) / 0xFFFFFFFF
+        bucket = (
+            int(digest[:8], 16)
+            / 0xFFFFFFFF
+        )
 
         if bucket < recovery_rate:
+
             recovery_status = "recovered"
-            recovered_amount = event.amount
+
+            recovered_amount = round(
+                event.amount,
+                2,
+            )
+
+            net_recovered_amount = round(
+                max(
+                    recovered_amount
+                    - retry_cost,
+                    0.0,
+                ),
+                2,
+            )
+
         else:
+
             recovery_status = "failed"
+
             recovered_amount = 0.0
 
+            net_recovered_amount = round(
+                -retry_cost,
+                2,
+            )
+
         # -------------------------------------------------
-        # 6. Return execution + recovery separately
+        # 7. Return execution + economic outcome
         # -------------------------------------------------
 
         return {
             "event_id": event.event_id,
             "action": action.value,
+
             "status": "executed",
+
             "execution_status": "executed",
+
             "recovery_status": recovery_status,
-            "recovered_amount": round(
-                recovered_amount,
-                2,
+
+            "recovered_amount": recovered_amount,
+
+            "retry_cost": retry_cost,
+
+            "net_recovered_amount": (
+                net_recovered_amount
             ),
-            "recovery_probability": recovery_rate,
+
+            "recovery_probability": (
+                recovery_rate
+            ),
         }
