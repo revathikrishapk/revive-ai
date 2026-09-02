@@ -1,8 +1,16 @@
 /* =========================================================
    REVIVE — FRONTEND APPLICATION
-   ========================================================= */
+========================================================= */
 
 const API_BASE = "";
+
+/*
+   Single source of truth for the live dashboard batch size.
+
+   Backend supports 1–500.
+   Revive's live demonstration runs 500 events.
+*/
+const BATCH_SIZE = 500;
 
 
 /* =========================================================
@@ -15,6 +23,7 @@ function $(id) {
 
 
 function setText(id, value) {
+
     const element = $(id);
 
     if (element) {
@@ -28,6 +37,7 @@ function setText(id, value) {
 ========================================================= */
 
 function formatCurrency(value) {
+
     const number = Number(value || 0);
 
     return new Intl.NumberFormat(
@@ -42,11 +52,13 @@ function formatCurrency(value) {
 
 
 function formatPercent(value) {
+
     return `${Number(value || 0).toFixed(2)}%`;
 }
 
 
 function formatCompactCurrency(value) {
+
     const number = Number(value || 0);
 
     if (number >= 10000000) {
@@ -66,6 +78,7 @@ function formatCompactCurrency(value) {
 
 
 function formatName(value) {
+
     if (!value) {
         return "Unknown";
     }
@@ -80,7 +93,11 @@ function formatName(value) {
 
 
 function escapeHtml(value) {
-    if (value === null || value === undefined) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
         return "";
     }
 
@@ -98,29 +115,44 @@ function escapeHtml(value) {
 ========================================================= */
 
 function showToast(message) {
-    const toast = $("toast");
-    const toastMessage = $("toastMessage");
 
-    if (!toast || !toastMessage) {
+    const toast =
+        $("toast");
+
+    const toastMessage =
+        $("toastMessage");
+
+    if (
+        !toast ||
+        !toastMessage
+    ) {
         return;
     }
 
-    toastMessage.textContent = message;
+    toastMessage.textContent =
+        message;
 
-    toast.classList.add("visible");
+    toast.classList.add(
+        "visible"
+    );
 
-    setTimeout(() => {
-        toast.classList.remove("visible");
-    }, 3500);
+    setTimeout(
+        () => {
+            toast.classList.remove(
+                "visible"
+            );
+        },
+        3500
+    );
 }
 
 
 /* =========================================================
    ENGINE MODAL
-   Uses the existing engineModal from index.html.
 ========================================================= */
 
 const ENGINE_STAGES = [
+
     {
         key: "ingestion",
         title: "Receiving payment events",
@@ -168,11 +200,14 @@ const ENGINE_STAGES = [
             "Persisting every recovery decision and outcome...",
         progress: 96,
     },
+
 ];
 
 
 function openEngineModal() {
-    const modal = $("engineModal");
+
+    const modal =
+        $("engineModal");
 
     if (!modal) {
         return;
@@ -180,7 +215,9 @@ function openEngineModal() {
 
     resetEngineModal();
 
-    modal.classList.add("is-open");
+    modal.classList.add(
+        "is-open"
+    );
 
     modal.setAttribute(
         "aria-hidden",
@@ -190,13 +227,17 @@ function openEngineModal() {
 
 
 function closeEngineModal() {
-    const modal = $("engineModal");
+
+    const modal =
+        $("engineModal");
 
     if (!modal) {
         return;
     }
 
-    modal.classList.remove("is-open");
+    modal.classList.remove(
+        "is-open"
+    );
 
     modal.setAttribute(
         "aria-hidden",
@@ -232,7 +273,8 @@ function resetEngineModal() {
         $("engineProgressBar");
 
     if (progressBar) {
-        progressBar.style.width = "0%";
+        progressBar.style.width =
+            "0%";
     }
 
 
@@ -240,9 +282,11 @@ function resetEngineModal() {
         $("engineResult");
 
     if (result) {
+
         result.classList.remove(
             "visible"
         );
+
     }
 
 
@@ -263,14 +307,16 @@ function resetEngineModal() {
         .querySelectorAll(
             ".engine-stage"
         )
-        .forEach(stage => {
+        .forEach(
+            stage => {
 
-            stage.classList.remove(
-                "active",
-                "complete"
-            );
+                stage.classList.remove(
+                    "active",
+                    "complete"
+                );
 
-        });
+            }
+        );
 }
 
 
@@ -291,7 +337,9 @@ function updateEngineStage(
 
 
     const stage =
-        ENGINE_STAGES[stageIndex];
+        ENGINE_STAGES[
+            stageIndex
+        ];
 
 
     const progress =
@@ -335,64 +383,102 @@ function updateEngineStage(
         .querySelectorAll(
             ".engine-stage"
         )
-        .forEach(element => {
+        .forEach(
+            element => {
 
-            const key =
-                element.dataset.stage;
+                const key =
+                    element.dataset.stage;
 
-            const currentIndex =
-                ENGINE_STAGES.findIndex(
-                    item =>
-                        item.key === key
-                );
-
-
-            element.classList.remove(
-                "active",
-                "complete"
-            );
+                const currentIndex =
+                    ENGINE_STAGES.findIndex(
+                        item =>
+                            item.key === key
+                    );
 
 
-            if (
-                currentIndex <
-                stageIndex
-            ) {
-
-                element.classList.add(
+                element.classList.remove(
+                    "active",
                     "complete"
                 );
 
-            } else if (
-                currentIndex ===
-                stageIndex
-            ) {
 
-                element.classList.add(
-                    "active"
-                );
+                if (
+                    currentIndex <
+                    stageIndex
+                ) {
+
+                    element.classList.add(
+                        "complete"
+                    );
+
+                }
+                else if (
+                    currentIndex ===
+                    stageIndex
+                ) {
+
+                    element.classList.add(
+                        "active"
+                    );
+
+                }
+
             }
+        );
+}
 
-        });
+
+/* =========================================================
+   IMPORTANT:
+   ALWAYS USE THE ACTUAL RETURNED EVENT COUNT
+========================================================= */
+
+function getProcessedEventCount(report) {
+
+    if (
+        report &&
+        Array.isArray(
+            report.events
+        )
+    ) {
+
+        return report.events.length;
+
+    }
+
+
+    return Number(
+        report?.events_processed ||
+        0
+    );
 }
 
 
 function completeEngineModal(report) {
 
+    const processedEvents =
+        getProcessedEventCount(
+            report
+        );
+
+
     document
         .querySelectorAll(
             ".engine-stage"
         )
-        .forEach(stage => {
+        .forEach(
+            stage => {
 
-            stage.classList.remove(
-                "active"
-            );
+                stage.classList.remove(
+                    "active"
+                );
 
-            stage.classList.add(
-                "complete"
-            );
+                stage.classList.add(
+                    "complete"
+                );
 
-        });
+            }
+        );
 
 
     setText(
@@ -403,11 +489,7 @@ function completeEngineModal(report) {
 
     setText(
         "engineModalSubtitle",
-        `${
-            report.events_processed ||
-            report.events?.length ||
-            0
-        } payment events processed successfully.`
+        `${processedEvents} payment events processed successfully.`
     );
 
 
@@ -427,8 +509,10 @@ function completeEngineModal(report) {
         $("engineProgressBar");
 
     if (progressBar) {
+
         progressBar.style.width =
             "100%";
+
     }
 
 
@@ -448,11 +532,16 @@ function completeEngineModal(report) {
     );
 
 
+    /*
+       IMPORTANT FIX:
+
+       Display the actual number of
+       event objects returned by the API.
+    */
+
     setText(
         "engineEvents",
-        report.events_processed ||
-        report.events?.length ||
-        0
+        processedEvents
     );
 
 
@@ -460,9 +549,11 @@ function completeEngineModal(report) {
         $("engineResult");
 
     if (result) {
+
         result.classList.add(
             "visible"
         );
+
     }
 
 
@@ -476,7 +567,9 @@ function completeEngineModal(report) {
 
         doneButton.textContent =
             "Done";
+
     }
+
 }
 
 
@@ -486,13 +579,15 @@ function failEngineModal(error) {
         .querySelectorAll(
             ".engine-stage"
         )
-        .forEach(stage => {
+        .forEach(
+            stage => {
 
-            stage.classList.remove(
-                "active"
-            );
+                stage.classList.remove(
+                    "active"
+                );
 
-        });
+            }
+        );
 
 
     setText(
@@ -524,7 +619,9 @@ function failEngineModal(error) {
 
         doneButton.textContent =
             "Close";
+
     }
+
 }
 
 
@@ -535,14 +632,18 @@ function failEngineModal(error) {
 async function runRecoveryBatch() {
 
     /*
-       Backend supports 1–500 events.
-       The dashboard uses 80 for a normal
-       interactive recovery run.
+       BATCH_SIZE is the single source of truth.
+       Current live demonstration = 500 events.
     */
+
+    console.log(
+        `Starting Revive recovery batch: ${BATCH_SIZE} events`
+    );
+
 
     const response =
         await fetch(
-            `${API_BASE}/run-batch?count=80`,
+            `${API_BASE}/run-batch?count=${BATCH_SIZE}`,
             {
                 method: "POST",
             }
@@ -565,7 +666,8 @@ async function runRecoveryBatch() {
                     data.detail;
             }
 
-        } catch (_) {
+        }
+        catch (_) {
             // Keep default message.
         }
 
@@ -576,7 +678,44 @@ async function runRecoveryBatch() {
     }
 
 
-    return await response.json();
+    const report =
+        await response.json();
+
+
+    /*
+       Debug information.
+
+       This lets us verify exactly what
+       the frontend received.
+    */
+
+    console.log(
+        "Revive batch response:",
+        report
+    );
+
+
+    console.log(
+        "Requested events:",
+        BATCH_SIZE
+    );
+
+
+    console.log(
+        "Returned event objects:",
+        Array.isArray(report.events)
+            ? report.events.length
+            : "events array unavailable"
+    );
+
+
+    console.log(
+        "Backend events_processed:",
+        report.events_processed
+    );
+
+
+    return report;
 }
 
 
@@ -608,7 +747,8 @@ async function getAuditLog(eventId) {
                     data.detail;
             }
 
-        } catch (_) {
+        }
+        catch (_) {
             // Keep default message.
         }
 
@@ -640,6 +780,7 @@ async function getLatestExperiment() {
         throw new Error(
             "No experiment results available."
         );
+
     }
 
 
@@ -656,30 +797,34 @@ function setButtonsLoading(
 ) {
 
     const buttons = [
+
         $("runBatchBtn"),
         $("heroRunBtn"),
         $("finalRunBtn"),
         $("navRunBtn"),
+
     ];
 
 
-    buttons.forEach(button => {
+    buttons.forEach(
+        button => {
 
-        if (!button) {
-            return;
+            if (!button) {
+                return;
+            }
+
+
+            button.disabled =
+                loading;
+
+
+            button.classList.toggle(
+                "loading",
+                loading
+            );
+
         }
-
-
-        button.disabled =
-            loading;
-
-
-        button.classList.toggle(
-            "loading",
-            loading
-        );
-
-    });
+    );
 }
 
 
@@ -853,12 +998,7 @@ function updateCategoryList(report) {
 
 
 /* =========================================================
-   EVENT STATUS
-========================================================= */
-/* =========================================================
    EVENT NORMALIZATION
-   Backend returns flat event summaries.
-   Frontend uses nested objects.
 ========================================================= */
 
 function normalizeEvent(rawEvent) {
@@ -867,14 +1007,21 @@ function normalizeEvent(rawEvent) {
         return {};
     }
 
+
     return {
+
         ...rawEvent,
 
+
         diagnosis:
+
             rawEvent.diagnosis &&
             typeof rawEvent.diagnosis === "object"
+
                 ? rawEvent.diagnosis
+
                 : {
+
                     category:
                         rawEvent.diagnosis ||
                         "unknown",
@@ -886,13 +1033,19 @@ function normalizeEvent(rawEvent) {
                     reasoning:
                         rawEvent.reasoning ||
                         "",
+
                 },
 
+
         decision:
+
             rawEvent.decision &&
             typeof rawEvent.decision === "object"
+
                 ? rawEvent.decision
+
                 : {
+
                     action:
                         rawEvent.decision ||
                         "no_action",
@@ -904,13 +1057,19 @@ function normalizeEvent(rawEvent) {
                     retry_cadence:
                         rawEvent.retry_cadence ||
                         "none",
+
                 },
 
+
         result:
+
             rawEvent.result &&
             typeof rawEvent.result === "object"
+
                 ? rawEvent.result
+
                 : {
+
                     status:
                         rawEvent.status ||
                         "not_executed",
@@ -922,13 +1081,16 @@ function normalizeEvent(rawEvent) {
                     recovered_amount:
                         rawEvent.recovered_amount ||
                         0,
+
                 },
+
     };
 }
 
 
-
-
+/* =========================================================
+   EVENT STATUS
+========================================================= */
 
 function getEventStatus(event) {
 
@@ -946,6 +1108,7 @@ function getEventStatus(event) {
     ) {
 
         return "recovered";
+
     }
 
 
@@ -955,6 +1118,7 @@ function getEventStatus(event) {
     ) {
 
         return "failed";
+
     }
 
 
@@ -964,6 +1128,7 @@ function getEventStatus(event) {
     ) {
 
         return "escalated";
+
     }
 
 
@@ -973,6 +1138,7 @@ function getEventStatus(event) {
     ) {
 
         return "stopped";
+
     }
 
 
@@ -989,20 +1155,22 @@ function updateEventList(report) {
     const container =
         $("eventList");
 
+
     if (!container) {
         return;
     }
 
-    /*
-       IMPORTANT:
-
-       The API returns flat event summaries.
-       Normalize them before the UI consumes them.
-    */
 
     const events =
-        (report.events || [])
-            .map(normalizeEvent);
+        Array.isArray(
+            report.events
+        )
+
+            ? report.events.map(
+                normalizeEvent
+            )
+
+            : [];
 
 
     setText(
@@ -1011,7 +1179,10 @@ function updateEventList(report) {
     );
 
 
-    if (events.length === 0) {
+    if (
+        events.length ===
+        0
+    ) {
 
         container.innerHTML = `
             <div class="empty-state">
@@ -1043,8 +1214,10 @@ function updateEventList(report) {
                     const result =
                         event.result || {};
 
+
                     const diagnosis =
                         event.diagnosis || {};
+
 
                     const decision =
                         event.decision || {};
@@ -1137,9 +1310,11 @@ function updateEventList(report) {
 
                                     ${
                                         recovered > 0
+
                                             ? formatCurrency(
                                                 recovered
                                             )
+
                                             : formatCurrency(
                                                 event.amount
                                             )
@@ -1173,33 +1348,36 @@ function updateEventList(report) {
         .querySelectorAll(
             ".event-row"
         )
-        .forEach(element => {
+        .forEach(
+            element => {
 
-            element.addEventListener(
-                "click",
-                () => {
+                element.addEventListener(
+                    "click",
+                    () => {
 
-                    const index =
-                        Number(
-                            element.dataset
-                                .eventIndex
+                        const index =
+                            Number(
+                                element.dataset
+                                    .eventIndex
+                            );
+
+
+                        const event =
+                            events[index];
+
+
+                        selectEvent(
+                            element,
+                            event
                         );
 
+                    }
+                );
 
-                    const event =
-                        events[index];
-
-
-                    selectEvent(
-                        element,
-                        event
-                    );
-
-                }
-            );
-
-        });
+            }
+        );
 }
+
 
 /* =========================================================
    AUDIT — SELECT EVENT
@@ -1214,13 +1392,15 @@ async function selectEvent(
         .querySelectorAll(
             ".event-row"
         )
-        .forEach(item => {
+        .forEach(
+            item => {
 
-            item.classList.remove(
-                "selected"
-            );
+                item.classList.remove(
+                    "selected"
+                );
 
-        });
+            }
+        );
 
 
     element.classList.add(
@@ -1246,7 +1426,8 @@ async function selectEvent(
             event
         );
 
-    } catch (error) {
+    }
+    catch (error) {
 
         console.error(
             "Audit error:",
@@ -1257,6 +1438,7 @@ async function selectEvent(
         renderAuditError(
             error.message
         );
+
     }
 }
 
@@ -1541,6 +1723,7 @@ function renderAuditTrace(
                                     </details>
 
                                 `;
+
                             }
 
 
@@ -1611,6 +1794,7 @@ function renderAuditTrace(
                                 </div>
 
                             `;
+
                         }
                     )
                     .join("")
@@ -1660,6 +1844,7 @@ function identifyStage(
 
 
     const stages = [
+
         "RECEIVED",
         "VALIDATED",
         "DIAGNOSING",
@@ -1670,6 +1855,7 @@ function identifyStage(
         "ESCALATED",
         "STOPPED",
         "COMPLETED",
+
     ];
 
 
@@ -1695,6 +1881,7 @@ function getEntryDetail(
             entry.message ||
             "Stage recorded in audit trail."
         );
+
     }
 
 
@@ -1704,6 +1891,7 @@ function getEntryDetail(
     ) {
 
         return details;
+
     }
 
 
@@ -1712,6 +1900,7 @@ function getEntryDetail(
     ) {
 
         return details.reasoning;
+
     }
 
 
@@ -1722,6 +1911,7 @@ function getEntryDetail(
         return `Decision reason: ${formatName(
             details.reason
         )}`;
+
     }
 
 
@@ -1732,6 +1922,7 @@ function getEntryDetail(
         return `Action: ${formatName(
             details.action
         )}`;
+
     }
 
 
@@ -1740,6 +1931,7 @@ function getEntryDetail(
     ) {
 
         return "Execution result recorded.";
+
     }
 
 
@@ -1758,6 +1950,7 @@ function getEntryMetadata(
     ) {
 
         return null;
+
     }
 
 
@@ -1802,15 +1995,18 @@ async function loadExperimentComparison() {
 
 
         const baseline =
-            experiment.baseline || {};
+            experiment.baseline ||
+            {};
 
 
         const revive =
-            experiment.revive || {};
+            experiment.revive ||
+            {};
 
 
         const comparison =
-            experiment.comparison || {};
+            experiment.comparison ||
+            {};
 
 
         setText(
@@ -1875,8 +2071,8 @@ async function loadExperimentComparison() {
             `Revive prevented ${unsafe} unsafe retry actions while maintaining controlled recovery.`
         );
 
-
-    } catch (error) {
+    }
+    catch (error) {
 
         console.warn(
             "Experiment comparison unavailable:",
@@ -1898,6 +2094,7 @@ async function handleRunBatch() {
     ) {
 
         return;
+
     }
 
 
@@ -1918,9 +2115,6 @@ async function handleRunBatch() {
         /*
            Start the REAL backend request
            immediately.
-
-           The modal updates while the
-           backend is processing.
         */
 
         const batchPromise =
@@ -1993,10 +2187,7 @@ async function handleRunBatch() {
 
 
         /*
-           IMPORTANT:
-
-           Do not declare success until
-           the REAL backend response arrives.
+           Wait for the REAL backend response.
         */
 
         const report =
@@ -2026,28 +2217,21 @@ async function handleRunBatch() {
         );
 
 
-        /*
-           Update live dashboard.
-        */
-
         updateDashboard(
             report
         );
 
 
-        /*
-           Reload frozen experiment benchmark.
-        */
-
         await loadExperimentComparison();
 
 
         showToast(
-            "Recovery batch completed."
+            `Recovery batch completed: ${getProcessedEventCount(report)} events.`
         );
 
 
-    } catch (error) {
+    }
+    catch (error) {
 
         console.error(
             "Recovery batch error:",
@@ -2065,8 +2249,8 @@ async function handleRunBatch() {
             "Recovery batch failed."
         );
 
-
-    } finally {
+    }
+    finally {
 
         setButtonsLoading(
             false
@@ -2075,6 +2259,7 @@ async function handleRunBatch() {
 
         window.reviveBatchRunning =
             false;
+
     }
 }
 
@@ -2089,32 +2274,34 @@ function initializeNavigation() {
         .querySelectorAll(
             ".nav-link"
         )
-        .forEach(link => {
+        .forEach(
+            link => {
 
-            link.addEventListener(
-                "click",
-                () => {
+                link.addEventListener(
+                    "click",
+                    () => {
 
-                    document
-                        .querySelectorAll(
-                            ".nav-link"
-                        )
-                        .forEach(
-                            navLink =>
-                                navLink.classList.remove(
-                                    "active"
-                                )
+                        document
+                            .querySelectorAll(
+                                ".nav-link"
+                            )
+                            .forEach(
+                                navLink =>
+                                    navLink.classList.remove(
+                                        "active"
+                                    )
+                            );
+
+
+                        link.classList.add(
+                            "active"
                         );
 
+                    }
+                );
 
-                    link.classList.add(
-                        "active"
-                    );
-
-                }
-            );
-
-        });
+            }
+        );
 }
 
 
@@ -2143,11 +2330,6 @@ function initializeEngineModal() {
         closeButton.addEventListener(
             "click",
             () => {
-
-                /*
-                   Do not allow closing while
-                   the real batch is executing.
-                */
 
                 if (
                     !window.reviveBatchRunning
@@ -2230,11 +2412,18 @@ function initialize() {
     );
 
 
+    console.log(
+        `Live batch size: ${BATCH_SIZE}`
+    );
+
+
     const runButtons = [
+
         $("runBatchBtn"),
         $("heroRunBtn"),
         $("finalRunBtn"),
         $("navRunBtn"),
+
     ];
 
 
@@ -2261,11 +2450,12 @@ function initialize() {
 
 
     /*
-       Load the frozen Experiment 019
+       Load frozen Experiment 019
        benchmark immediately.
     */
 
     loadExperimentComparison();
+
 }
 
 
