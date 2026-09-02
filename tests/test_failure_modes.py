@@ -148,3 +148,20 @@ def test_subscription_retry_uses_delayed_cadence():
 
     assert decision.action == RecoveryAction.RETRY_PAYMENT
     assert decision.retry_cadence == RetryCadence.AFTER_24_HOURS
+
+def test_execution_timeout_does_not_report_recovery():
+    executor = RecoveryExecutor()
+    event = make_event()
+
+    result = executor.execute(
+        event,
+        RecoveryAction.RETRY_PAYMENT,
+        failure_category="network_error",
+        simulate_timeout=True,
+    )
+
+    assert result["status"] == "execution_timeout"
+    assert result["execution_status"] == "failed"
+    assert result["recovery_status"] == "not_attempted"
+    assert result["recovered_amount"] == 0.0
+    assert result["net_recovered_amount"] == 0.0

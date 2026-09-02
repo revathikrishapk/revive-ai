@@ -33,12 +33,16 @@ class RecoveryExecutor:
         event: FailedPaymentEvent,
         action: RecoveryAction,
         failure_category: str | None = None,
+        simulate_timeout: bool = False,
     ) -> dict:
         """
         Execute an approved recovery action.
 
         Idempotency guarantees that the same event cannot
         be executed more than once.
+
+        simulate_timeout is used only for deliberate
+        failure-mode testing.
         """
 
         # -------------------------------------------------
@@ -77,12 +81,27 @@ class RecoveryExecutor:
         # 3. Mark event as executed
         # -------------------------------------------------
 
-        self.executed_event_ids.add(
-            event.event_id
-        )
+        self.executed_event_ids.add(event.event_id)
 
         # -------------------------------------------------
-        # 4. Determine synthetic recovery probability
+        # 4. Deliberate execution failure injection
+        # -------------------------------------------------
+
+        if simulate_timeout:
+            return {
+                "event_id": event.event_id,
+                "action": action.value,
+                "status": "execution_timeout",
+                "execution_status": "failed",
+                "recovery_status": "not_attempted",
+                "recovered_amount": 0.0,
+                "retry_cost": 0.0,
+                "net_recovered_amount": 0.0,
+                "error": "Simulated execution timeout.",
+            }
+
+        # -------------------------------------------------
+        # 5. Determine synthetic recovery probability
         # -------------------------------------------------
 
         recovery_rate = self.RECOVERY_RATES.get(
@@ -91,13 +110,13 @@ class RecoveryExecutor:
         )
 
         # -------------------------------------------------
-        # 5. Retry has a synthetic processing cost
+        # 6. Retry has a synthetic processing cost
         # -------------------------------------------------
 
         retry_cost = self.RETRY_COST
 
         # -------------------------------------------------
-        # 6. Generate deterministic outcome
+        # 7. Generate deterministic outcome
         # -------------------------------------------------
 
         digest = hashlib.sha256(
@@ -139,28 +158,17 @@ class RecoveryExecutor:
             )
 
         # -------------------------------------------------
-        # 7. Return execution + economic outcome
+        # 8. Return execution + economic outcome
         # -------------------------------------------------
 
         return {
             "event_id": event.event_id,
             "action": action.value,
-
             "status": "executed",
-
             "execution_status": "executed",
-
             "recovery_status": recovery_status,
-
             "recovered_amount": recovered_amount,
-
             "retry_cost": retry_cost,
-
-            "net_recovered_amount": (
-                net_recovered_amount
-            ),
-
-            "recovery_probability": (
-                recovery_rate
-            ),
+            "net_recovered_amount": net_recovered_amount,
+            "recovery_probability": recovery_rate,
         }
