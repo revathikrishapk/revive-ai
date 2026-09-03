@@ -92,26 +92,41 @@ flowchart TD
 
 
 ## Results
-### 500-Event Synthetic Benchmark
-| Metric                                |            Revive |
-| ------------------------------------- | ----------------: |
-| Events processed                      |           **500** |
-| Revenue at risk                       | **₹19,87,156.17** |
-| Gross revenue recovered               |  **₹6,40,757.39** |
-| Retry cost                            |          **₹582** |
-| Net revenue recovered                 |  **₹6,40,175.39** |
-| Gross recovery rate                   |        **32.24%** |
-| Recovery attempts                     |           **291** |
-| Successful recoveries                 |           **158** |
-| Attempt success rate                  |        **54.30%** |
-| Human escalations                     |   **91 (18.20%)** |
-| Value withheld from unsafe automation |  **₹7,93,054.49** |
-These results come from the current synthetic benchmark and simulated executor. They demonstrate system behavior and are not claims of production merchant performance.
+### Latest 500-Event Run
+
+| Metric | Result |
+|---|---:|
+| Events processed | **500** |
+| Revenue at risk | **₹19.16 lakh** |
+| Gross recovered | **₹6.41 lakh** |
+| Net recovered | **₹6.40 lakh** |
+| Recovery rate | **33.45%** |
+| Recovery attempts | **280** |
+| Successful recoveries | **160** |
+| Failed recoveries | **120** |
+| Human escalations | **86** |
+| Protected revenue | **₹8.04 lakh** |
+
+These numbers come directly from a live 500-event run of Revive.
+
+### Frozen Experiment 019
+
+| Metric | Baseline | Revive |
+|---|---:|---:|
+| Events | 500 | 500 |
+| Gross recovered | ₹8.45 lakh | ₹6.41 lakh |
+| Safe recovery rate | 52.36% | **53.40%** |
+| Recovery attempts | 500 | **291** |
+| Unsafe retries | 232 | **0** |
+
+**+1.04 percentage points** safe recovery rate.
+
+**232 unsafe retries prevented.**
 
 ## AI Diagnosis Performance
 | Metric                     |        Result |
 | -------------------------- | ------------: |
-| Events evaluated           |       **500** |
+| Diagnoses evaluated        |       **498** |
 | Correct diagnoses          |       **482** |
 | Diagnosis accuracy         |    **96.79%** |
 | Fallback diagnoses         | **2 (0.40%)** |
@@ -156,20 +171,20 @@ To evaluate the safety/recovery trade-off, the exact same 500 synthetic events w
 
 ### What this shows
 
-Naive retry recovered more raw simulated revenue because it attempted every event.
+Naive retry recovers more gross simulated revenue because it attempts every event.
 
-Revive intentionally sacrifices some gross recovery in order to enforce:
+Revive intentionally does not retry everything.
+
+It trades some gross recovery for:
+
 - Fraud protection
 - Retry limits
 - Economic constraints
 - Confidence-based escalation
 
-The objective is therefore not:
+The goal is not maximum retry volume.
 
-"Retry as many payments as possible."
-
-It is:
-"Recover payments where automated recovery is justified, while preventing unsafe or uneconomic actions."
+The goal is **controlled recovery**.
 
 ## Failure Diagnosis
 Revive categorizes failed payments into:
@@ -195,6 +210,49 @@ flowchart TD
 
 This creates a fail-safe AI boundary.
 
+## Deliberate Failure Injection
+
+Revive also tests what happens when execution itself fails.
+
+A simulated execution timeout is injected into the executor.
+
+Expected behaviour:
+
+```mermaid
+flowchart TD
+    A["Approved Retry"] --> B["Execution Timeout"]
+    B --> C["Execution Marked Failed"]
+    C --> D["Recovery Status = Not Attempted"]
+    D --> E["Recovered Amount = ₹0"]
+```
+## Testing
+
+Revive has a safety-focused automated test suite covering both
+policy guardrails and deliberate failure scenarios.
+
+### Test result
+
+22 passed in 1.06s
+
+### What is tested
+
+- Economic floor
+- Retry cap
+- Low-confidence escalation
+- Fraud-hold protection
+- Safe retry decisions
+- Invalid AI confidence
+- Invalid AI category
+- Malformed AI diagnosis handling
+- Subscription retry cadence
+- Duplicate execution
+- Idempotency protection
+- Execution timeout failure injection
+
+The test suite is designed to verify that Revive fails safely when
+individual components behave unexpectedly, rather than only testing
+the happy path.
+
 ## Category-Aware Recovery
 Revive does not use one retry strategy for every failure.
 
@@ -207,7 +265,7 @@ Revive does not use one retry strategy for every failure.
 | Unknown            | No automatic retry | No automatic retry |
 All category-specific strategies remain subject to the global safety guardrails.
 
-## Recovery by Failure Category
+## Recovery by Failure Category - Experiment 019
 | Failure Type       | Events | Revenue at Risk |    Recovered |    Recovery Rate |
 | ------------------ | -----: | --------------: | -----------: | ---------------: |
 | Network error      |    115 |    ₹4,66,745.37 | ₹3,10,004.82 |       **66.42%** |
@@ -220,12 +278,13 @@ Network failures perform best in this synthetic batch because they are modeled a
 Fraud holds have zero automated recovery by design.
 
 ## Recovery by Payment Type
-| Metric            |       One-off | Subscription |
-| ----------------- | ------------: | -----------: |
-| Events            |           258 |          242 |
-| Revenue at risk   | ₹13,34,921.14 | ₹6,52,235.03 |
-| Net recovered     |  ₹4,02,193.47 | ₹2,37,981.92 |
-| Net recovery rate |        30.13% |   **36.49%** |
+| Metric          |     One-off | Subscription |
+| --------------- | ----------: | -----------: |
+| Events          |         246 |          254 |
+| Revenue at risk | ₹12.47 lakh |   ₹6.69 lakh |
+| Recovered       |  ₹4.01 lakh |   ₹2.40 lakh |
+| Recovery rate   |      32.18% |       35.81% |
+
 Subscription payments show a higher observed recovery rate in this synthetic batch.
 
 This experiment does not establish that retry cadence alone caused this difference.
@@ -394,19 +453,6 @@ http://127.0.0.1:8000
 ```bash
 pytest -q
 ```
-Tests cover important recovery and safety behavior including:
-
-- Economic floor
-- Retry cap
-- Fraud hold
-- Low confidence
-- Safe retry decisions
-- Invalid diagnosis output
-- Confidence validation
-- Subscription retry cadence
-- Duplicate execution
-- Execution failure handling
-
 ## Experiment Methodology
 The benchmark evaluates two strategies on the same 500 synthetic events:
 
