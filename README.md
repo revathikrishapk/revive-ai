@@ -225,6 +225,7 @@ flowchart TD
     C --> D["Recovery Status = Not Attempted"]
     D --> E["Recovered Amount = ₹0"]
 ```
+This ensures execution failures are not incorrectly reported as successful revenue recovery.
 ## Testing
 
 Revive has a safety-focused automated test suite covering both
