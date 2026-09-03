@@ -151,15 +151,15 @@ To evaluate the safety/recovery trade-off, the exact same 500 synthetic events w
 | Retry-cap violations      |          118 |        **0** |
 | Economic-floor violations |            1 |        **0** |
 
-What this shows
+# What this shows
 
 Naive retry recovered more raw simulated revenue because it attempted every event.
 
 Revive intentionally sacrifices some gross recovery in order to enforce:
--fraud protection
--retry limits
--economic constraints
--confidence-based escalation
+- Fraud protection
+- Retry limits
+- Economic constraints
+- Confidence-based escalation
 
 The objective is therefore not:
 
@@ -171,12 +171,12 @@ It is:
 ## Failure Diagnosis
 Revive categorizes failed payments into:
 
-NETWORK_ERROR
-INSUFFICIENT_FUNDS
-EXPIRED_CARD
-MANDATE_FAILURE
-FRAUD_HOLD
-UNKNOWN
+- NETWORK_ERROR
+- INSUFFICIENT_FUNDS
+- EXPIRED_CARD
+- MANDATE_FAILURE
+- FRAUD_HOLD
+- UNKNOWN
 The model response is validated using a strict Pydantic schema.
 Invalid model output does not directly reach the policy engine.
 ```mermaid
@@ -204,7 +204,7 @@ Revive does not use one retry strategy for every failure.
 | Unknown            | No automatic retry | No automatic retry |
 All category-specific strategies remain subject to the global safety guardrails.
 
-# Recovery by Failure Category
+## Recovery by Failure Category
 | Failure Type       | Events | Revenue at Risk |    Recovered |    Recovery Rate |
 | ------------------ | -----: | --------------: | -----------: | ---------------: |
 | Network error      |    115 |    ₹4,66,745.37 | ₹3,10,004.82 |       **66.42%** |
@@ -216,7 +216,7 @@ Network failures perform best in this synthetic batch because they are modeled a
 
 Fraud holds have zero automated recovery by design.
 
-# Recovery by Payment Type
+## Recovery by Payment Type
 | Metric            |       One-off | Subscription |
 | ----------------- | ------------: | -----------: |
 | Events            |           258 |          242 |
@@ -294,6 +294,7 @@ flowchart TD
     style J stroke-width:2px
 ```                
 ## Project Structure
+```text
 revive-ai/
 │
 ├── app/
@@ -309,17 +310,18 @@ revive-ai/
 │   └── generate_data.py     # Synthetic payment generation
 │
 ├── data/
-│   └── audit_log.jsonl
+│   └── audit_log.jsonl      # Persistent audit trail
 │
 ├── experiment_results/
-│   └── experiment_*.json
+│   └── experiment_*.json    # Experiment outputs
 │
-├── experiments/
+├── experiments/             # Evaluation experiments
 │
-├── tests/
+├── tests/                   # Test suite
 │
-├── requirements.txt
-└── README.md
+├── requirements.txt         # Python dependencies
+└── README.md                # Project documentation
+```
 
 ## API
 | Endpoint                    | Description                    |
@@ -332,54 +334,85 @@ revive-ai/
 
 ## Run Locally
 
-# 1. Clone
+### 1. Clone the Repository
+
+```bash
 git clone https://github.com/revathikrishapk/revive-ai.git
 cd revive-ai
+```
 
-# 2. Create Virtual Environment
-Windows
+### 2. Create a Virtual Environment
+
+**Windows**
+
+```bash
 python -m venv .venv
 .venv\Scripts\activate
-macOS / Linux
+```
+
+**macOS / Linux**
+
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
+```
 
-# 3. Install dependencies
+### 3. Install Dependencies
+
+```bash
 pip install -r requirements.txt
+```
 
-# 4. Configure LLM
-Create .env:
+### 4. Configure the LLM
+
+Create a `.env` file in the project root:
+
+```env
 OPENROUTER_API_KEY=your_key_here
 OPENROUTER_MODEL=openrouter/free
+```
 
-# 5. Start
+> **Security:** Never commit your `.env` file or expose your API key publicly.
+> Add `.env` to `.gitignore`.
+
+### 5. Start the Application
+
+```bash
 uvicorn app.main:app --reload
-Open
-http://127.0.0.1:8000
+```
 
+### 6. Open the Application
+
+Visit:
+
+```text
+http://127.0.0.1:8000
+```
 ## Testing
+```bash
 pytest -q
+```
 Tests cover important recovery and safety behavior including:
 
--economic floor
--retry cap
--fraud hold
--low confidence
--safe retry decisions
--invalid diagnosis output
--confidence validation
--subscription retry cadence
--duplicate execution
--execution failure handling
+- Economic floor
+- Retry cap
+- Fraud hold
+- Low confidence
+- Safe retry decisions
+- Invalid diagnosis output
+- Confidence validation
+- Subscription retry cadence
+- Duplicate execution
+- Execution failure handling
 
 ## Experiment Methodology
 The benchmark evaluates two strategies on the same 500 synthetic events:
 
-# Strategy 1 — Naive Retry
+## Strategy 1 — Naive Retry
 
 Attempt recovery for every event.
 
-# Strategy 2 — Revive
+## Strategy 2 — Revive
 ```mermaid
 flowchart TD
     A["Diagnose"] --> B["Apply Guardrails"]
@@ -396,59 +429,41 @@ Recovery outcomes are deterministic and simulated.
 
 Therefore, the benchmark demonstrates:
 
-system behavior
-policy enforcement
-diagnosis performance on synthetic data
-recovery/cost trade-offs
-safety violations avoided
+- System behavior
+- Policy enforcement
+- Diagnosis performance on synthetic data
+- Recovery/cost trade-offs
+- Safety violations avoided
 
 It does not claim production recovery uplift.
 
-## What Is Real vs Simulated?
-Capability	Status
-Event validation	✅ Implemented
-State machine	✅ Implemented
-AI diagnosis	✅ Implemented
-Deterministic policy	✅ Implemented
-Guardrails	✅ Implemented
-Idempotency	✅ Prototype implementation
-Audit logging	✅ Implemented
-Reporting	✅ Implemented
-Dashboard	✅ Implemented
-Payment events	🧪 Synthetic
-Payment execution	🧪 Simulated
-Real money movement	❌ None
-Real payment gateway	❌ Not connected
-Human-review queue	🧪 Modeled as escalation
+## Real vs. Simulated Capabilities
+
+| Capability | Status | Description |
+|---|---|---|
+| Event Validation | **Implemented** | Validates incoming payment events against defined schemas |
+| Recovery State Machine | **Implemented** | Manages deterministic recovery states and transitions |
+| AI Diagnosis | **Implemented** | Uses an LLM to diagnose payment failure scenarios |
+| Deterministic Policy Engine | **Implemented** | Applies rule-based recovery and safety policies |
+| Guardrails | **Implemented** | Enforces safety constraints before recovery actions |
+| Idempotency | **Prototype** | Prevents duplicate recovery execution within the prototype |
+| Audit Logging | **Implemented** | Records recovery decisions and execution events in JSONL format |
+| Recovery Reporting | **Implemented** | Computes recovery and operational metrics |
+| Monitoring Dashboard | **Implemented** | Displays recovery outcomes and system metrics |
+| Payment Events | **Synthetic** | Generated locally for controlled experimentation |
+| Payment Execution | **Simulated** | Recovery actions are executed against a simulated payment environment |
+| Real Money Movement | **Not Connected** | No real financial transactions are performed |
+| Payment Gateway | **Not Connected** | No production payment processor is integrated |
+| Human Review Queue | **Modeled** | Escalation states are represented within the recovery workflow |
 
 ## Production Roadmap
-# Phase 1 — Integration
-Real payment-provider/webhook ingestion
-Authenticated event processing
-Single-event recovery API
-Real payment execution
 
-# Phase 2 — Reliability
-Durable workflow state
-Database-backed idempotency
-Concurrent-event handling
-Provider/model failover
-Retry scheduling
-
-# Phase 3 — Intelligence
-Historical payment-data evaluation
-Confidence calibration
-Merchant-specific recovery policies
-Offline replay evaluation
-Model quality monitoring
-
-# Phase 4 — Operations
-Human-review queue
-Notifications
-Monitoring
-Tracing
-Alerting
-Recovery-cost optimization
+| Phase | Focus | Key Deliverables |
+|---|---|---|
+| **Phase 1** | Payment Integration | Provider/webhook ingestion, authenticated events, recovery API, real payment execution |
+| **Phase 2** | Reliability & Resilience | Durable state, database-backed idempotency, concurrency handling, failover, retry scheduling |
+| **Phase 3** | Intelligence & Evaluation | Historical-data evaluation, confidence calibration, merchant-specific policies, offline replay, model monitoring |
+| **Phase 4** | Operations & Observability | Human review, notifications, monitoring, tracing, alerting, recovery-cost optimization |
 
 The core safety boundary remains unchanged:
 ```mermaid
@@ -459,25 +474,24 @@ flowchart TD
 
 
 ## Design Principles
-1. AI should not directly control money
 
-The LLM diagnoses; deterministic policy authorizes.
+### 1. AI Does Not Directly Control Money
+The LLM is responsible for **diagnosis**, not authorization.  
+Deterministic policies govern whether a recovery action is permitted.
 
-2. Failure should be safe
+### 2. Fail Safely
+When diagnosis is unavailable, invalid, or uncertain, the system defaults to a **more conservative state** rather than taking a more aggressive action.
 
-If diagnosis fails, the system should become more conservative—not more aggressive.
+### 3. Make Every Decision Explainable
+Every recovery attempt records the **diagnosis, policy decision, rationale, and execution outcome**, creating an auditable decision trail.
 
-3. Every automated action should be explainable
+### 4. Optimize for Economic Recovery
+A technically successful retry is not necessarily a successful recovery.  
+Recovery decisions should account for **cost, expected outcome, and business impact**.
 
-Store the diagnosis, policy decision, reason, and execution outcome.
-
-4. Recovery should consider economics
-
-A successful retry is not automatically a good retry.
-
-5. Safety should be measurable
-
-Don't just claim guardrails exist. Measure violations avoided.
+### 5. Measure Safety
+Guardrails should be **measurable and testable**, not merely documented.  
+The system evaluates safety through metrics such as **policy violations prevented and unsafe actions blocked**.
 
 ## Key Takeaway
 
