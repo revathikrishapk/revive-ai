@@ -69,27 +69,24 @@ Only policy-approved actions reach the executor.
 ### Audit layer
 
 Every important state transition and decision is recorded.
+```mermaid
+flowchart TD
+    A["Failed Payment"] --> B["Validation"]
+    B --> C["AI Diagnosis"]
+    C --> D["Deterministic Policy"]
 
-```text
-Failed Payment
-      ↓
-Validation
-      ↓
-AI Diagnosis
-      ↓
-Deterministic Policy
-      ↓
- ┌──────────┬───────────┬──────────┐
- │  RETRY   │ ESCALATE  │   STOP   │
- └──────────┴───────────┴──────────┘
-      ↓
-Guarded Execution
-      ↓
-Audit Trail
-      ↓
-Business Metrics
+    D --> E["RETRY"]
+    D --> F["ESCALATE"]
+    D --> G["STOP"]
 
+    E --> H["Guarded Execution"]
+    F --> I["Audit Trail"]
+    G --> I
+    H --> I
+
+    I --> J["Business Metrics"]
 ```
+
 
 ## Results
 500-Event Synthetic Benchmark
@@ -133,17 +130,14 @@ It optimizes for controlled recovery.
 | Confidence protection | Confidence `< 0.55` | **ESCALATE** |
 | Unknown diagnosis     | Unknown / fallback  | **ESCALATE** |
 Example:
-₹5,000 payment
-      +
-Fraud hold
-      +
-LLM confidence = 0.99
-      ↓
-Deterministic Policy
-      ↓
-ESCALATE TO HUMAN
-      ↓
-NO AUTOMATIC RETRY
+```mermaid
+flowchart TD
+    A["₹5,000 Payment"] --> B["Fraud Hold"]
+    B --> C["LLM Confidence = 0.99"]
+    C --> D["Deterministic Policy"]
+    D --> E["ESCALATE TO HUMAN"]
+    E --> F["NO AUTOMATIC RETRY"]
+```
 The LLM cannot override these rules.
 
 ## Revive vs Naive Retry
@@ -238,17 +232,14 @@ Duplicate payment events should not result in duplicate recovery attempts.
 
 Revive uses the event ID as an idempotency key in the execution layer.
 
-Event A
-   ↓
-Execute
-   ↓
-SUCCESS
+```mermaid
+flowchart TD
+    A["Event A"] --> B["Execute"]
+    B --> C["SUCCESS"]
 
-Event A
-   ↓
-Duplicate ID detected
-   ↓
-SKIP
+    D["Event A"] --> E["Duplicate ID Detected"]
+    E --> F["SKIP"]
+```
 
 The current implementation uses an in-memory idempotency set.
 
@@ -257,21 +248,17 @@ A production implementation would move this guarantee to durable storage/payment
 ## Auditability
 Every major workflow stage is recorded in an append-only JSONL audit trail.
 
-RECEIVED
-   ↓
-VALIDATED
-   ↓
-DIAGNOSING
-   ↓
-DIAGNOSED
-   ↓
-DECIDING
-   ↓
-DECIDED
-   ↓
-EXECUTING
-   ↓
-COMPLETED
+```mermaid
+flowchart TD
+    A["RECEIVED"] --> B["VALIDATED"]
+    B --> C["DIAGNOSING"]
+    C --> D["DIAGNOSED"]
+    D --> E["DECIDING"]
+    E --> F["DECIDED"]
+    F --> G["EXECUTING"]
+    G --> H["COMPLETED"]
+```
+
 For stopped or escalated events, execution is skipped but the decision remains auditable.
 This lets operators answer:
 Why was this payment retried?
@@ -280,57 +267,32 @@ not just:
 Did this payment recover?
 
 ## Architecture
-                  FAILED PAYMENT
-                         │
-                         ▼
-                ┌─────────────────┐
-                │ Event Validation│
-                │    Pydantic     │
-                └────────┬────────┘
-                         │
-                         ▼
-                ┌─────────────────┐
-                │   FSM Workflow  │
-                └────────┬────────┘
-                         │
-                         ▼
-              ┌──────────────────────┐
-              │    AI DIAGNOSIS      │
-              │                      │
-              │ Category             │
-              │ Confidence           │
-              │ Reasoning            │
-              └──────────┬───────────┘
-                         │
-                         ▼
-              ┌──────────────────────┐
-              │ DETERMINISTIC POLICY │
-              │                      │
-              │ Economic floor       │
-              │ Retry cap            │
-              │ Fraud protection     │
-              │ Confidence threshold│
-              │ Category strategy    │
-              └──────────┬───────────┘
-                         │
-                ┌────────┼────────┐
-                ▼        ▼        ▼
-              RETRY   ESCALATE   STOP
-                │        │        │
-                ▼        │        │
-        ┌──────────────┐ │        │
-        │  Executor    │ │        │
-        │ + Idempotency│ │        │
-        └──────┬───────┘ │        │
-               └─────────┼────────┘
-                         ▼
-                ┌─────────────────┐
-                │   Audit Trail   │
-                └────────┬────────┘
-                         ▼
-                ┌─────────────────┐
-                │    Reporting    │
-                └─────────────────┘
+ ```mermaid
+flowchart TD
+    A["FAILED PAYMENT"] --> B["Event Validation<br/>Pydantic"]
+    B --> C["FSM Workflow"]
+
+    C --> D["AI DIAGNOSIS<br/><br/>Category<br/>Confidence<br/>Reasoning"]
+
+    D --> E["DETERMINISTIC POLICY<br/><br/>Economic Floor<br/>Retry Cap<br/>Fraud Protection<br/>Confidence Threshold<br/>Category Strategy"]
+
+    E --> F["RETRY"]
+    E --> G["ESCALATE"]
+    E --> H["STOP"]
+
+    F --> I["Executor<br/>+ Idempotency"]
+
+    G --> J["Audit Trail"]
+    H --> J
+    I --> J
+
+    J --> K["Reporting"]
+
+    style D stroke-width:2px
+    style E stroke-width:3px
+    style I stroke-width:2px
+    style J stroke-width:2px
+```                
 ## Project Structure
 revive-ai/
 │
@@ -418,11 +380,13 @@ The benchmark evaluates two strategies on the same 500 synthetic events:
 Attempt recovery for every event.
 
 # Strategy 2 — Revive
-Diagnose
-   ↓
-Apply guardrails
-   ↓
-Retry / Stop / Escalate
+```mermaid
+flowchart TD
+    A["Diagnose"] --> B["Apply Guardrails"]
+    B --> C["Retry"]
+    B --> D["Stop"]
+    B --> E["Escalate"]
+```
 
 Synthetic ground truth is used only by the evaluator to measure diagnosis accuracy.
 
@@ -487,12 +451,12 @@ Alerting
 Recovery-cost optimization
 
 The core safety boundary remains unchanged:
+```mermaid
+flowchart TD
+    A["Probabilistic AI"] --> B["Deterministic Financial Policy"]
+    B --> C["Guarded Execution"]
+```
 
-Probabilistic AI
-      ↓
-Deterministic Financial Policy
-      ↓
-Guarded Execution
 
 ## Design Principles
 1. AI should not directly control money
