@@ -35,12 +35,12 @@ A low-value payment may not justify another recovery attempt.
 
 A naive "retry everything" strategy can therefore:
 
-- waste payment attempts
-- repeatedly retry unsafe transactions
-- violate retry limits
-- increase operational/payment costs
-- create poor customer experiences
-- make it difficult to explain why a payment was retried
+- Waste payment attempts
+- Repeatedly retry unsafe transactions
+- Violate retry limits
+- Increase operational/payment costs
+- Create poor customer experiences
+- Make it difficult to explain why a payment was retried
 
 Revive treats payment recovery as a **risk- and economics-constrained decision problem**.
 
