@@ -185,23 +185,17 @@ FRAUD_HOLD
 UNKNOWN
 The model response is validated using a strict Pydantic schema.
 Invalid model output does not directly reach the policy engine.
+```mermaid
+flowchart TD
+    A[LLM Output] --> B[Schema Validation]
+    B -->|Valid| C[Policy Evaluation]
+    B -->|Invalid| D[Retry Diagnosis]
+    D --> E[Fallback]
+    E --> F["category = UNKNOWN<br/>confidence = 0"]
+    F --> G[ESCALATE]
+```
+                   
 
-LLM Output
-    ↓
-Schema Validation
-    ↓
-Valid ─────────────→ Policy
-    │
-    └─ Invalid
-          ↓
-      Retry diagnosis
-          ↓
-      Fallback
-          ↓
- category = UNKNOWN
- confidence = 0
-          ↓
-      ESCALATE
 This creates a fail-safe AI boundary.
 
 ## Category-Aware Recovery
