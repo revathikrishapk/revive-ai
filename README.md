@@ -1,10 +1,10 @@
 # Revive AI
 **Track 03 — AI Revenue Recovery | Razorpay AI Buildathon 2026**
 
-> Revive AI recovers failed revenue by combining AI failure diagnosis
-> with deterministic guardrails that decide when to retry, when to stop,
-> and when to escalate — with every decision auditable and every outcome
-> measurable.
+Revive AI recovers failed revenue by combining AI failure diagnosis
+with deterministic guardrails that decide when to retry, when to stop,
+and when to escalate — with every decision auditable and every outcome
+ measurable.
 
 ---
 
