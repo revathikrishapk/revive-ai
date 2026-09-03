@@ -3,7 +3,10 @@
 
 **Razorpay AI Buildathon 2026 · Track 03 — AI Revenue Recovery**
 
-## What is Revive AI ?
+[Live Demo](YOUR_DEMO_URL) · [Demo Video](YOUR_VIDEO_URL)
+
+---
+## What is Revive AI?
 Revive AI turns failed payments into controlled recovery decisions.
 
 Instead of blindly retrying every failed payment, Revive:
@@ -19,7 +22,7 @@ Instead of blindly retrying every failed payment, Revive:
 ### Core principle
 
 > **AI diagnoses. Rules decide. Execution is guarded. Everything is audited.**
-
+---
 ## The Problem
 
 Failed payments are not all equal.
@@ -89,7 +92,7 @@ flowchart TD
 
 
 ## Results
-500-Event Synthetic Benchmark
+### 500-Event Synthetic Benchmark
 | Metric                                |            Revive |
 | ------------------------------------- | ----------------: |
 | Events processed                      |           **500** |
@@ -129,7 +132,7 @@ It optimizes for controlled recovery.
 | Fraud protection      | Fraud hold          | **ESCALATE** |
 | Confidence protection | Confidence `< 0.55` | **ESCALATE** |
 | Unknown diagnosis     | Unknown / fallback  | **ESCALATE** |
-Example:
+### Example: Fraud Hold Overrides AI Confidence
 ```mermaid
 flowchart TD
     A["₹5,000 Payment"] --> B["Fraud Hold"]
@@ -151,7 +154,7 @@ To evaluate the safety/recovery trade-off, the exact same 500 synthetic events w
 | Retry-cap violations      |          118 |        **0** |
 | Economic-floor violations |            1 |        **0** |
 
-# What this shows
+### What this shows
 
 Naive retry recovered more raw simulated revenue because it attempted every event.
 
@@ -227,7 +230,7 @@ Subscription payments show a higher observed recovery rate in this synthetic bat
 
 This experiment does not establish that retry cadence alone caused this difference.
 
-## Idempotation Execution
+## Idempotent Execution
 Duplicate payment events should not result in duplicate recovery attempts.
 
 Revive uses the event ID as an idempotency key in the execution layer.
@@ -267,11 +270,10 @@ not just:
 Did this payment recover?
 
 ## Architecture
- ```mermaid
+```mermaid
 flowchart TD
     A["FAILED PAYMENT"] --> B["Event Validation<br/>Pydantic"]
     B --> C["FSM Workflow"]
-
     C --> D["AI DIAGNOSIS<br/><br/>Category<br/>Confidence<br/>Reasoning"]
 
     D --> E["DETERMINISTIC POLICY<br/><br/>Economic Floor<br/>Retry Cap<br/>Fraud Protection<br/>Confidence Threshold<br/>Category Strategy"]
@@ -408,11 +410,11 @@ Tests cover important recovery and safety behavior including:
 ## Experiment Methodology
 The benchmark evaluates two strategies on the same 500 synthetic events:
 
-## Strategy 1 — Naive Retry
+### Strategy 1 — Naive Retry
 
 Attempt recovery for every event.
 
-## Strategy 2 — Revive
+### Strategy 2 — Revive
 ```mermaid
 flowchart TD
     A["Diagnose"] --> B["Apply Guardrails"]
