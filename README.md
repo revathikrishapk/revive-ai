@@ -134,6 +134,7 @@ These numbers come directly from a live 500-event run of Revive.
 | Provider failures          |         **0** |
 | API calls                  |        **29** |
 | Cache hits                 |       **478** |
+
 The diagnosis cache reduced model calls from 500 potential diagnoses to only 29 API calls in this benchmark.
 
 ## Safety Guardrails
