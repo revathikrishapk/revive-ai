@@ -3,7 +3,7 @@
 
 **Razorpay AI Buildathon 2026 · Track 03 — AI Revenue Recovery**
 
-[Live Demo](YOUR_DEMO_URL) · [Demo Video](YOUR_VIDEO_URL)
+[Demo Video](https://youtu.be/1DK_B6tsThU)
 
 ---
 ## What is Revive AI?
