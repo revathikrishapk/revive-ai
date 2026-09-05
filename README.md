@@ -141,7 +141,7 @@ The goal is not maximum retry volume. The goal is **controlled recovery**.
 | Cache hits | **478** |
 
 
-### The diagnosis cache reduced 500 potential model calls to 29 API calls in this benchmark, with 478 cache hits.
+The diagnosis cache reduced 500 potential model calls to 29 API calls in this benchmark, with 478 cache hits.
 
 ---
 ## Safety Guardrails
