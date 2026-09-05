@@ -93,37 +93,38 @@ flowchart TD
 
 ## Results
 ### Latest 500-Event Run
+### These figures are from the 500-event recovery run shown in the demo video. Experiment 019 below is a separate frozen benchmark used for reproducible safety comparison.
 
 | Metric | Result |
 |---|---:|
 | Events processed | **500** |
-| Revenue at risk | **₹19.16 lakh** |
-| Gross recovered | **₹6.41 lakh** |
+| Revenue at risk | **₹19.2 lakh** |
+| Gross recovered | **₹6.5 lakh** |
 | Net recovered | **₹6.40 lakh** |
-| Recovery rate | **33.45%** |
-| Recovery attempts | **280** |
-| Successful recoveries | **160** |
-| Failed recoveries | **120** |
-| Human escalations | **86** |
-| Protected revenue | **₹8.04 lakh** |
+| Recovery rate | **33.56%** |
 
-These numbers come directly from a live 500-event run of Revive.
-
-### Frozen Experiment 019
 
 | Metric | Baseline | Revive |
 |---|---:|---:|
 | Events | 500 | 500 |
 | Gross recovered | ₹8.45 lakh | ₹6.41 lakh |
-| Safe recovery rate | 52.36% | **53.40%** |
+| Overall recovery rate | 42.52% | **32.24%** |
+| Safe recovery rate* | 52.36% | **53.40%** |
 | Recovery attempts | 500 | **291** |
 | Unsafe retries | 232 | **0** |
+
+\* Safe recovery rate is calculated only over the **₹12.00 lakh of fair recovery opportunities** in the benchmark, excluding events that should not have been automatically pursued.
 
 **+1.04 percentage points** safe recovery rate.
 
 **232 unsafe retries prevented.**
+The benchmark contained **₹12.00 lakh of fair recovery opportunities**. On those opportunities, Revive recovered **₹6.41 lakh (53.40%)**, compared with **₹6.28 lakh (52.36%)** under the naive strategy.
 
-## AI Diagnosis Performance
+## AI Diagnosis Performance — Experiment 019
+### Of the 500 events, 498 received an evaluated diagnosis and 2 fell back to the safe UNKNOWN diagnosis path. Those fallback events were not treated as valid AI diagnoses and were routed to escalation by policy.
+
+The diagnosis cache reduced 500 potential model calls to 29 API calls in this benchmark, with 478 cache hits.
+These results come from the frozen Experiment 019 benchmark.
 | Metric                     |        Result |
 | -------------------------- | ------------: |
 | Diagnoses evaluated        |       **498** |
@@ -159,7 +160,8 @@ flowchart TD
 ```
 The LLM cannot override these rules.
 
-## Revive vs Naive Retry
+## Frozen Experiment 019 — Revive vs Naive Retry
+### This benchmark uses a separate frozen 500-event batch and should not be compared row-for-row with the live demo run above.
 To evaluate the safety/recovery trade-off, the exact same 500 synthetic events were evaluated under two strategies.
 | Metric                    |  Naive Retry |       Revive |
 | ------------------------- | -----------: | -----------: |
@@ -170,6 +172,8 @@ To evaluate the safety/recovery trade-off, the exact same 500 synthetic events w
 | Retry-cap violations      |          118 |        **0** |
 | Economic-floor violations |            1 |        **0** |
 
+### +1.04 percentage points safe recovery rate.
+### 232 unsafe retries prevented.
 ### What this shows
 
 Naive retry recovers more gross simulated revenue because it attempts every event.
@@ -280,7 +284,8 @@ Network failures perform best in this synthetic batch because they are modeled a
 
 Fraud holds have zero automated recovery by design.
 
-## Recovery by Payment Type
+## Recovery by Payment Type — Experiment 019
+### These results come from the same frozen 500-event benchmark.
 | Metric          |     One-off | Subscription |
 | --------------- | ----------: | -----------: |
 | Events          |         246 |          254 |
