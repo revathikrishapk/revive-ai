@@ -103,7 +103,7 @@ flowchart TD
 ---
 ## Results — Frozen Experiment 019: Revive vs. Naive Retry
 
-*This is a separate, reproducible 500-event benchmark, run under two strategies for direct comparison. It is independent of the demo-video run above.*
+This is a separate, reproducible 500-event benchmark, run under two strategies for direct comparison. It is independent of the demo-video run above.*
 
 | Metric | Naive Retry | Revive |
 |---|---:|---:|
@@ -217,7 +217,7 @@ This ensures execution failures are not incorrectly reported as successful reven
 
 Revive has a safety-focused automated test suite covering both policy guardrails and deliberate failure scenarios.
 
-**Test result: 22 passed in 1.06s**
+**Test result: 22 passed**
 
 What is tested:
 - Economic floor
