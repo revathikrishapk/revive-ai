@@ -116,11 +116,11 @@ flowchart TD
 | Retry-cap violations | 118 | **0** |
 | Economic-floor violations | 1 | **0** |
 
- ### Overall recovery rate = gross recovered ÷ total ₹19,87,156.17 at risk across all 500 events.
+Overall recovery rate = gross recovered ÷ total ₹19,87,156.17 at risk across all 500 events.
 
-###  Safe recovery rate = gross recovered ÷ the ₹12,00,017.57 subset of "fair recovery opportunities" in the benchmark — i.e. excluding events (fraud holds, retry-cap violations, economic-floor violations) that should never have been automatically pursued in the first place. On those fair opportunities, Revive recovered ₹6,40,757.39 (53.40%) versus ₹6,28,307.64 (52.36%) under the naive strategy.
+Safe recovery rate = gross recovered ÷ the ₹12,00,017.57 subset of "fair recovery opportunities" in the benchmark — i.e. excluding events (fraud holds, retry-cap violations, economic-floor violations) that should never have been automatically pursued in the first place. On those fair opportunities, Revive recovered ₹6,40,757.39 (53.40%) versus ₹6,28,307.64 (52.36%) under the naive strategy.
 
-### Headline result: +1.04 percentage points safe recovery rate, with 232 unsafe retries prevented** (113 fraud-hold retries + 118 retry-cap violations + 1 economic-floor violation).
+Headline result: +1.04 percentage points safe recovery rate, with 232 unsafe retries prevented** (113 fraud-hold retries + 118 retry-cap violations + 1 economic-floor violation).
 
 ### What this shows
 
