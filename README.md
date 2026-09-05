@@ -50,6 +50,9 @@ Revive treats payment recovery as a **risk- and economics-constrained decision p
 Revive separates probabilistic AI reasoning from deterministic financial authority.
 
 ### AI layer
+
+Revive uses an LLM through OpenRouter for failure diagnosis.
+
 The LLM only determines:
 - Failure category
 - Confidence
