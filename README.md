@@ -113,11 +113,12 @@ flowchart TD
 | Retry-cap violations | 118 | **0** |
 | Economic-floor violations | 1 | **0** |
 
-† *Overall recovery rate = gross recovered ÷ total ₹19,87,156.17 at risk across all 500 events.*
 
-‡ *Safe recovery rate = gross recovered ÷ the ₹12,00,017.57 subset of "fair recovery opportunities" in the benchmark — i.e. excluding events (fraud holds, retry-cap violations, economic-floor violations) that should never have been automatically pursued in the first place. On those fair opportunities, Revive recovered ₹6,40,757.39 (53.40%) versus ₹6,28,307.64 (52.36%) under the naive strategy.*
+ ### *Overall recovery rate = gross recovered ÷ total ₹19,87,156.17 at risk across all 500 events.*
 
-**Headline result: +1.04 percentage points safe recovery rate, with 232 unsafe retries prevented** (113 fraud-hold retries + 118 retry-cap violations + 1 economic-floor violation).
+###  *Safe recovery rate = gross recovered ÷ the ₹12,00,017.57 subset of "fair recovery opportunities" in the benchmark — i.e. excluding events (fraud holds, retry-cap violations, economic-floor violations) that should never have been automatically pursued in the first place. On those fair opportunities, Revive recovered ₹6,40,757.39 (53.40%) versus ₹6,28,307.64 (52.36%) under the naive strategy.*
+
+### **Headline result: +1.04 percentage points safe recovery rate, with 232 unsafe retries prevented** (113 fraud-hold retries + 118 retry-cap violations + 1 economic-floor violation).
 
 ### What this shows
 
@@ -264,9 +265,9 @@ Network failures perform best in this synthetic batch because they are modeled a
 | Metric | One-off | Subscription |
 |---|---:|---:|
 | Events | 246 | 254 |
-| Revenue at risk | ₹12,47,000.00 (₹12.47 lakh) | ₹6,69,000.00 (₹6.69 lakh) |
-| Recovered | ₹4,01,000.00 (₹4.01 lakh) | ₹2,40,000.00 (₹2.40 lakh) |
-| Recovery rate | 32.18% | **35.81%** |
+| Revenue at risk | ₹12,47,068.74 (₹12.47 lakh) | ₹6,69,351.65 (₹6.69 lakh) |
+| Recovered | ₹4,01,351.45 (₹4.01 lakh) | ₹2,39,405.94 (₹2.39 lakh) |
+| Recovery rate | 32.18% | **35.76%** |
 
 Subscription payments show a higher observed recovery rate in this synthetic batch. This experiment does not establish that retry cadence alone caused this difference.
 
