@@ -22,15 +22,16 @@ Instead of blindly retrying every failed payment, Revive:
 ### Core principle
 
 > **AI diagnoses. Rules decide. Execution is guarded. Everything is audited.**
+
 ---
 ## The Problem
 
 Failed payments are not all equal.
 
-A temporary network failure may be recoverable.  
-An expired card may require a different retry strategy.  
-Insufficient funds may justify delayed retries.  
-A fraud/security hold should not be blindly retried.  
+A temporary network failure may be recoverable.
+An expired card may require a different retry strategy.
+Insufficient funds may justify delayed retries.
+A fraud/security hold should not be blindly retried.
 A low-value payment may not justify another recovery attempt.
 
 A naive "retry everything" strategy can therefore:
@@ -49,29 +50,24 @@ Revive treats payment recovery as a **risk- and economics-constrained decision p
 Revive separates probabilistic AI reasoning from deterministic financial authority.
 
 ### AI layer
-
 The LLM only determines:
-
 - Failure category
 - Confidence
 - Reasoning
 
 ### Policy layer
-
 Deterministic Python logic decides:
-
 - Retry
 - Stop
 - Escalate to human
 - Retry timing
 
 ### Execution layer
-
 Only policy-approved actions reach the executor.
 
 ### Audit layer
-
 Every important state transition and decision is recorded.
+
 ```mermaid
 flowchart TD
     A["Failed Payment"] --> B["Validation"]
@@ -90,66 +86,78 @@ flowchart TD
     I --> J["Business Metrics"]
 ```
 
-
-## Results
-### Latest 500-Event Run
-### These figures are from the 500-event recovery run shown in the demo video. Experiment 019 below is a separate frozen benchmark used for reproducible safety comparison.
+---
+## Results — Recorded 500-Event Demo Run
+*These figures are from the 500-event recovery run shown in the demo video. Experiment 019, below, is a separate frozen benchmark used for reproducible safety comparison and should not be compared row-for-row with these numbers.*
 
 | Metric | Result |
 |---|---:|
 | Events processed | **500** |
 | Revenue at risk | **₹19.2 lakh** |
 | Gross recovered | **₹6.5 lakh** |
-| Net recovered | **₹6.40 lakh** |
 | Recovery rate | **33.56%** |
 
+---
+## Results — Frozen Experiment 019: Revive vs. Naive Retry
 
-| Metric | Baseline | Revive |
+*This is a separate, reproducible 500-event benchmark, run under two strategies for direct comparison. It is independent of the demo-video run above.*
+
+| Metric | Naive Retry | Revive |
 |---|---:|---:|
 | Events | 500 | 500 |
-| Gross recovered | ₹8.45 lakh | ₹6.41 lakh |
-| Overall recovery rate | 42.52% | **32.24%** |
-| Safe recovery rate* | 52.36% | **53.40%** |
-| Recovery attempts | 500 | **291** |
-| Unsafe retries | 232 | **0** |
+| Attempts | 500 | **291** |
+| Gross recovered | ₹8,44,938.34 | ₹6,40,757.39 |
+| Overall recovery rate† | 42.52% | **32.24%** |
+| Safe recovery rate‡ | 52.36% | **53.40%** |
+| Fraud-hold retries | 113 | **0** |
+| Retry-cap violations | 118 | **0** |
+| Economic-floor violations | 1 | **0** |
 
-\* Safe recovery rate is calculated only over the **₹12.00 lakh of fair recovery opportunities** in the benchmark, excluding events that should not have been automatically pursued.
+† *Overall recovery rate = gross recovered ÷ total ₹19,87,156.17 at risk across all 500 events.*
 
-**+1.04 percentage points** safe recovery rate.
+‡ *Safe recovery rate = gross recovered ÷ the ₹12,00,017.57 subset of "fair recovery opportunities" in the benchmark — i.e. excluding events (fraud holds, retry-cap violations, economic-floor violations) that should never have been automatically pursued in the first place. On those fair opportunities, Revive recovered ₹6,40,757.39 (53.40%) versus ₹6,28,307.64 (52.36%) under the naive strategy.*
 
-**232 unsafe retries prevented.**
-The benchmark contained **₹12.00 lakh of fair recovery opportunities**. On those opportunities, Revive recovered **₹6.41 lakh (53.40%)**, compared with **₹6.28 lakh (52.36%)** under the naive strategy.
+**Headline result: +1.04 percentage points safe recovery rate, with 232 unsafe retries prevented** (113 fraud-hold retries + 118 retry-cap violations + 1 economic-floor violation).
 
+### What this shows
+
+Naive retry recovers more gross simulated revenue because it attempts every event, with no regard for whether the attempt is safe or economically sound. Revive intentionally does not retry everything — it trades some gross recovery for fraud protection, retry limits, economic constraints, and confidence-based escalation.
+
+The goal is not maximum retry volume. The goal is **controlled recovery**.
+
+---
 ## AI Diagnosis Performance — Experiment 019
-### Of the 500 events, 498 received an evaluated diagnosis and 2 fell back to the safe UNKNOWN diagnosis path. Those fallback events were not treated as valid AI diagnoses and were routed to escalation by policy.
 
-The diagnosis cache reduced 500 potential model calls to 29 API calls in this benchmark, with 478 cache hits.
-These results come from the frozen Experiment 019 benchmark.
-| Metric                     |        Result |
-| -------------------------- | ------------: |
-| Diagnoses evaluated        |       **498** |
-| Correct diagnoses          |       **482** |
-| Diagnosis accuracy         |    **96.79%** |
-| Fallback diagnoses         | **2 (0.40%)** |
-| Validation failures caught |         **9** |
-| Provider failures          |         **0** |
-| API calls                  |        **29** |
-| Cache hits                 |       **478** |
 
-The diagnosis cache reduced model calls from 500 potential diagnoses to only 29 API calls in this benchmark.
+| Metric | Result |
+|---|---:|
+| Diagnoses evaluated | **498** |
+| Correct diagnoses | **482** |
+| Diagnosis accuracy | **96.79%** |
+| Fallback diagnoses | **2 (0.40%)** |
+| Validation failures caught | **9** |
+| Provider failures | **0** |
+| API calls | **29** |
+| Cache hits | **478** |
 
+
+### The diagnosis cache reduced 500 potential model calls to 29 API calls in this benchmark, with 478 cache hits.
+
+---
 ## Safety Guardrails
-Revive does not optimize for maximum retry volume.
 
-It optimizes for controlled recovery.
-| Guardrail             | Rule                | Action       |
-| --------------------- | ------------------- | ------------ |
-| Economic floor        | Amount `< ₹100`     | **STOP**     |
-| Retry cap             | `retry_count >= 3`  | **STOP**     |
-| Fraud protection      | Fraud hold          | **ESCALATE** |
+Revive does not optimize for maximum retry volume. It optimizes for controlled recovery.
+
+| Guardrail | Rule | Action |
+|---|---|---|
+| Economic floor | Amount `< ₹100` | **STOP** |
+| Retry cap | `retry_count >= 3` | **STOP** |
+| Fraud protection | Fraud hold | **ESCALATE** |
 | Confidence protection | Confidence `< 0.55` | **ESCALATE** |
-| Unknown diagnosis     | Unknown / fallback  | **ESCALATE** |
+| Unknown diagnosis | Unknown / fallback | **ESCALATE** |
+
 ### Example: Fraud Hold Overrides AI Confidence
+
 ```mermaid
 flowchart TD
     A["₹5,000 Payment"] --> B["Fraud Hold"]
@@ -158,50 +166,22 @@ flowchart TD
     D --> E["ESCALATE TO HUMAN"]
     E --> F["NO AUTOMATIC RETRY"]
 ```
+
 The LLM cannot override these rules.
 
-## Frozen Experiment 019 — Revive vs Naive Retry
-### This benchmark uses a separate frozen 500-event batch and should not be compared row-for-row with the live demo run above.
-To evaluate the safety/recovery trade-off, the exact same 500 synthetic events were evaluated under two strategies.
-| Metric                    |  Naive Retry |       Revive |
-| ------------------------- | -----------: | -----------: |
-| Attempts                  |          500 |      **291** |
-| Gross recovered           | ₹8,44,938.34 | ₹6,40,757.39 |
-| Recovery rate             |       42.52% |   **32.24%** |
-| Fraud-hold retries        |          113 |        **0** |
-| Retry-cap violations      |          118 |        **0** |
-| Economic-floor violations |            1 |        **0** |
-
-### +1.04 percentage points safe recovery rate.
-### 232 unsafe retries prevented.
-### What this shows
-
-Naive retry recovers more gross simulated revenue because it attempts every event.
-
-Revive intentionally does not retry everything.
-
-It trades some gross recovery for:
-
-- Fraud protection
-- Retry limits
-- Economic constraints
-- Confidence-based escalation
-
-The goal is not maximum retry volume.
-
-The goal is **controlled recovery**.
-
+---
 ## Failure Diagnosis
-Revive categorizes failed payments into:
 
-- NETWORK_ERROR
-- INSUFFICIENT_FUNDS
-- EXPIRED_CARD
-- MANDATE_FAILURE
-- FRAUD_HOLD
-- UNKNOWN
-The model response is validated using a strict Pydantic schema.
-Invalid model output does not directly reach the policy engine.
+Revive categorizes failed payments into:
+- `NETWORK_ERROR`
+- `INSUFFICIENT_FUNDS`
+- `EXPIRED_CARD`
+- `MANDATE_FAILURE`
+- `FRAUD_HOLD`
+- `UNKNOWN`
+
+The model response is validated using a strict Pydantic schema. Invalid model output does not directly reach the policy engine.
+
 ```mermaid
 flowchart TD
     A[LLM Output] --> B[Schema Validation]
@@ -211,15 +191,12 @@ flowchart TD
     E --> F["category = UNKNOWN<br/>confidence = 0"]
     F --> G[ESCALATE]
 ```
-                   
 
 This creates a fail-safe AI boundary.
 
 ## Deliberate Failure Injection
 
-Revive also tests what happens when execution itself fails.
-
-A simulated execution timeout is injected into the executor.
+Revive also tests what happens when execution itself fails. A simulated execution timeout is injected into the executor.
 
 Expected behaviour:
 
@@ -230,19 +207,16 @@ flowchart TD
     C --> D["Recovery Status = Not Attempted"]
     D --> E["Recovered Amount = ₹0"]
 ```
+
 This ensures execution failures are not incorrectly reported as successful revenue recovery.
 
 ## Testing
 
-Revive has a safety-focused automated test suite covering both
-policy guardrails and deliberate failure scenarios.
+Revive has a safety-focused automated test suite covering both policy guardrails and deliberate failure scenarios.
 
-### Test result
+**Test result: 22 passed in 1.06s**
 
-22 passed in 1.06s
-
-### What is tested
-
+What is tested:
 - Economic floor
 - Retry cap
 - Low-confidence escalation
@@ -256,51 +230,50 @@ policy guardrails and deliberate failure scenarios.
 - Idempotency protection
 - Execution timeout failure injection
 
-The test suite is designed to verify that Revive fails safely when
-individual components behave unexpectedly, rather than only testing
-the happy path.
+The test suite is designed to verify that Revive fails safely when individual components behave unexpectedly, rather than only testing the happy path.
 
+---
 ## Category-Aware Recovery
+
 Revive does not use one retry strategy for every failure.
 
-| Failure Type       | One-off            | Subscription       |
-| ------------------ | ------------------ | ------------------ |
-| Network error      | Immediate          | 24h → 72h          |
-| Insufficient funds | 24h                | 24h → 72h          |
-| Expired card       | 72h                | 24h → 72h          |
-| Mandate failure    | Policy-controlled  | 24h → 72h          |
-| Unknown            | No automatic retry | No automatic retry |
+| Failure Type | One-off | Subscription |
+|---|---|---|
+| Network error | Immediate | 24h → 72h |
+| Insufficient funds | 24h | 24h → 72h |
+| Expired card | 72h | 24h → 72h |
+| Mandate failure | Policy-controlled | 24h → 72h |
+| Unknown | No automatic retry | No automatic retry |
+
 All category-specific strategies remain subject to the global safety guardrails.
 
-## Recovery by Failure Category - Experiment 019
-| Failure Type       | Events | Revenue at Risk |    Recovered |    Recovery Rate |
-| ------------------ | -----: | --------------: | -----------: | ---------------: |
-| Network error      |    115 |    ₹4,66,745.37 | ₹3,10,004.82 |       **66.42%** |
-| Mandate failure    |     61 |    ₹1,53,785.12 |   ₹68,351.41 |       **44.45%** |
-| Insufficient funds |    116 |    ₹5,09,731.55 | ₹1,50,678.78 |       **29.56%** |
-| Expired card       |     93 |    ₹3,84,878.35 | ₹1,11,722.38 |       **29.03%** |
-| Fraud hold         |    113 |    ₹4,57,926.05 |           ₹0 | **0% by design** |
-Network failures perform best in this synthetic batch because they are modeled as transient failures.
+## Recovery by Failure Category — Experiment 019
 
-Fraud holds have zero automated recovery by design.
+| Failure Type | Events | Revenue at Risk | Recovered | Recovery Rate |
+|---|---:|---:|---:|---:|
+| Network error | 115 | ₹4,66,745.37 | ₹3,10,004.82 | **66.42%** |
+| Mandate failure | 45 | ₹1,12,416.46 | ₹68,351.41 | **60.81%** |
+| Insufficient funds | 116 | ₹5,09,731.55 | ₹1,50,678.78 | **29.56%** |
+| Expired card | 111 | ₹4,40,336.74 | ₹1,11,722.38 | **25.37%** |
+| Fraud hold | 113 | ₹4,57,926.05 | ₹0 | **0% by design** |
+
+Network failures perform best in this synthetic batch because they are modeled as transient failures. Fraud holds have zero automated recovery by design.
 
 ## Recovery by Payment Type — Experiment 019
-### These results come from the same frozen 500-event benchmark.
-| Metric          |     One-off | Subscription |
-| --------------- | ----------: | -----------: |
-| Events          |         246 |          254 |
-| Revenue at risk | ₹12.47 lakh |   ₹6.69 lakh |
-| Recovered       |  ₹4.01 lakh |   ₹2.40 lakh |
-| Recovery rate   |      32.18% |       35.81% |
 
-Subscription payments show a higher observed recovery rate in this synthetic batch.
+| Metric | One-off | Subscription |
+|---|---:|---:|
+| Events | 246 | 254 |
+| Revenue at risk | ₹12,47,000.00 (₹12.47 lakh) | ₹6,69,000.00 (₹6.69 lakh) |
+| Recovered | ₹4,01,000.00 (₹4.01 lakh) | ₹2,40,000.00 (₹2.40 lakh) |
+| Recovery rate | 32.18% | **35.81%** |
 
-This experiment does not establish that retry cadence alone caused this difference.
+Subscription payments show a higher observed recovery rate in this synthetic batch. This experiment does not establish that retry cadence alone caused this difference.
 
+---
 ## Idempotent Execution
-Duplicate payment events should not result in duplicate recovery attempts.
 
-Revive uses the event ID as an idempotency key in the execution layer.
+Duplicate payment events should not result in duplicate recovery attempts. Revive uses the event ID as an idempotency key in the execution layer.
 
 ```mermaid
 flowchart TD
@@ -311,11 +284,10 @@ flowchart TD
     E --> F["SKIP"]
 ```
 
-The current implementation uses an in-memory idempotency set.
-
-A production implementation would move this guarantee to durable storage/payment-provider infrastructure with atomic uniqueness enforcement.
+The current implementation uses an in-memory idempotency set. A production implementation would move this guarantee to durable storage/payment-provider infrastructure with atomic uniqueness enforcement.
 
 ## Auditability
+
 Every major workflow stage is recorded in an append-only JSONL audit trail.
 
 ```mermaid
@@ -329,14 +301,10 @@ flowchart TD
     G --> H["COMPLETED"]
 ```
 
-For stopped or escalated events, execution is skipped but the decision remains auditable.
-This lets operators answer:
-Why was this payment retried?
-
-not just:
-Did this payment recover?
+For stopped or escalated events, execution is skipped but the decision remains auditable. This lets operators answer *why* a payment was retried, not just *whether* it recovered.
 
 ## Architecture
+
 ```mermaid
 flowchart TD
     A["FAILED PAYMENT"] --> B["Event Validation<br/>Pydantic"]
@@ -361,8 +329,10 @@ flowchart TD
     style E stroke-width:3px
     style I stroke-width:2px
     style J stroke-width:2px
-```                
+```
+
 ## Project Structure
+
 ```text
 revive-ai/
 │
@@ -393,18 +363,18 @@ revive-ai/
 ```
 
 ## API
-| Endpoint                    | Description                    |
-| --------------------------- | ------------------------------ |
-| `GET /`                     | Interactive recovery dashboard |
-| `GET /health`               | Application health check       |
-| `POST /run-batch?count=500` | Run synthetic recovery batch   |
-| `GET /audit-log/{event_id}` | Inspect event audit history    |
-| `GET /experiment/latest`    | Retrieve latest benchmark      |
+
+| Endpoint | Description |
+|---|---|
+| `GET /` | Interactive recovery dashboard |
+| `GET /health` | Application health check |
+| `POST /run-batch?count=500` | Run synthetic recovery batch |
+| `GET /audit-log/{event_id}` | Inspect event audit history |
+| `GET /experiment/latest` | Retrieve latest benchmark |
 
 ## Run Locally
 
 ### 1. Clone the Repository
-
 ```bash
 git clone https://github.com/revathikrishapk/revive-ai.git
 cd revive-ai
@@ -413,21 +383,18 @@ cd revive-ai
 ### 2. Create a Virtual Environment
 
 **Windows**
-
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
 ```
 
 **macOS / Linux**
-
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
 ### 3. Install Dependencies
-
 ```bash
 pip install -r requirements.txt
 ```
@@ -435,40 +402,35 @@ pip install -r requirements.txt
 ### 4. Configure the LLM
 
 Create a `.env` file in the project root:
-
 ```env
 OPENROUTER_API_KEY=your_key_here
 OPENROUTER_MODEL=openrouter/free
 ```
 
-> **Security:** Never commit your `.env` file or expose your API key publicly.
-> Add `.env` to `.gitignore`.
+> **Security:** Never commit your `.env` file or expose your API key publicly. Add `.env` to `.gitignore`.
 
 ### 5. Start the Application
-
 ```bash
 uvicorn app.main:app --reload
 ```
 
 ### 6. Open the Application
 
-Visit:
+Visit `http://127.0.0.1:8000`
 
-```text
-http://127.0.0.1:8000
-```
-## Testing
+### Run Tests
 ```bash
 pytest -q
 ```
+
+---
 ## Experiment Methodology
+
 The benchmark evaluates two strategies on the same 500 synthetic events:
 
-### Strategy 1 — Naive Retry
+**Strategy 1 — Naive Retry:** attempt recovery for every event.
 
-Attempt recovery for every event.
-
-### Strategy 2 — Revive
+**Strategy 2 — Revive:**
 ```mermaid
 flowchart TD
     A["Diagnose"] --> B["Apply Guardrails"]
@@ -477,21 +439,9 @@ flowchart TD
     B --> E["Escalate"]
 ```
 
-Synthetic ground truth is used only by the evaluator to measure diagnosis accuracy.
+Synthetic ground truth is used only by the evaluator to measure diagnosis accuracy. It is not supplied to the LLM or policy engine as decision input. Recovery outcomes are deterministic and simulated.
 
-It is not supplied to the LLM or policy engine as decision input.
-
-Recovery outcomes are deterministic and simulated.
-
-Therefore, the benchmark demonstrates:
-
-- System behavior
-- Policy enforcement
-- Diagnosis performance on synthetic data
-- Recovery/cost trade-offs
-- Safety violations avoided
-
-It does not claim production recovery uplift.
+Therefore, the benchmark demonstrates system behavior, policy enforcement, diagnosis performance on synthetic data, recovery/cost trade-offs, and safety violations avoided. **It does not claim production recovery uplift.**
 
 ## Real vs. Simulated Capabilities
 
@@ -528,30 +478,23 @@ flowchart TD
     B --> C["Guarded Execution"]
 ```
 
-
 ## Design Principles
 
-### 1. AI Does Not Directly Control Money
-The LLM is responsible for **diagnosis**, not authorization.  
-Deterministic policies govern whether a recovery action is permitted.
+**1. AI Does Not Directly Control Money**
+The LLM is responsible for diagnosis, not authorization. Deterministic policies govern whether a recovery action is permitted.
 
-### 2. Fail Safely
-When diagnosis is unavailable, invalid, or uncertain, the system defaults to a **more conservative state** rather than taking a more aggressive action.
+**2. Fail Safely**
+When diagnosis is unavailable, invalid, or uncertain, the system defaults to a more conservative state rather than taking a more aggressive action.
 
-### 3. Make Every Decision Explainable
-Every recovery attempt records the **diagnosis, policy decision, rationale, and execution outcome**, creating an auditable decision trail.
+**3. Make Every Decision Explainable**
+Every recovery attempt records the diagnosis, policy decision, rationale, and execution outcome, creating an auditable decision trail.
 
-### 4. Optimize for Economic Recovery
-A technically successful retry is not necessarily a successful recovery.  
-Recovery decisions should account for **cost, expected outcome, and business impact**.
+**4. Optimize for Economic Recovery**
+A technically successful retry is not necessarily a successful recovery. Recovery decisions should account for cost, expected outcome, and business impact.
 
-### 5. Measure Safety
-Guardrails should be **measurable and testable**, not merely documented.  
-The system evaluates safety through metrics such as **policy violations prevented and unsafe actions blocked**.
+**5. Measure Safety**
+Guardrails should be measurable and testable, not merely documented. The system evaluates safety through metrics such as policy violations prevented and unsafe actions blocked.
 
 ## Key Takeaway
 
 Revive AI doesn't use AI to blindly retry more payments. It uses AI to understand why a payment failed, deterministic policy to decide whether recovery is justified, guarded execution to prevent duplicate or unsafe actions, and measurable experiments to quantify the recovery/safety trade-off.
-
-
-
